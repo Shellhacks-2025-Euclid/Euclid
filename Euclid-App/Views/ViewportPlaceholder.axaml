@@ -1,7 +1,8 @@
 <UserControl
     x:Class="EuclidApp.Views.ViewportPlaceholder"
     xmlns="https://github.com/avaloniaui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:views="clr-namespace:EuclidApp.Views">
     <Grid>
         <Border Background="{DynamicResource Brush.ViewportBg}" CornerRadius="12" />
         <Grid>
@@ -24,22 +25,11 @@
             </Grid.Background>
         </Grid>
 
-        <Canvas>
-            <Rectangle
-                Canvas.Left="{Binding ViewCenterX, Mode=OneWay, FallbackValue=300}"
-                Canvas.Top="{Binding ViewCenterY, Mode=OneWay, FallbackValue=220}"
-                Width="60"
-                Height="60"
-                Fill="#20FFFFFF"
-                RenderTransformOrigin="0.5,0.5"
-                Stroke="{DynamicResource Brush.BorderStrong}"
-                StrokeDashArray="2,2" />
-            <TextBlock
-                Margin="0,12,0,0"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Opacity="0.6"
-                Text="Viewport (placeholder)" />
-        </Canvas>
+        <Grid x:Name="InputLayer" Background="Transparent">
+            <views:EuclidView
+                x:Name="GL"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch" />
+        </Grid>
     </Grid>
 </UserControl>
