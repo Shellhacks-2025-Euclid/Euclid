@@ -1,28 +1,19 @@
 <Styles
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:euclid="clr-namespace:EuclidApp.Controls;assembly=Euclid-App">
+    xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia">
 
     <Styles.Resources>
-
         <SolidColorBrush x:Key="Brush.Surface" Color="#15171B" />
         <SolidColorBrush x:Key="Brush.Card" Color="#1E2127" />
         <SolidColorBrush x:Key="Brush.Border" Color="#2C313A" />
-        <SolidColorBrush x:Key="Brush.BorderStrong" Color="#3A404C" />
         <SolidColorBrush x:Key="Brush.Accent" Color="#5EA0EF" />
-        <SolidColorBrush x:Key="Brush.ViewportBg" Color="#121417" />
-        <SolidColorBrush x:Key="Brush.ViewportTile" Color="#22262E" />
-
-        <Thickness x:Key="Gap.Outer">8</Thickness>
         <CornerRadius x:Key="Radius.Card">12</CornerRadius>
         <CornerRadius x:Key="Radius.Expander">10</CornerRadius>
-
-        <CornerRadius x:Key="Radius.Expander.All">10</CornerRadius>
         <CornerRadius x:Key="Radius.Expander.Bottom">0,0,10,10</CornerRadius>
     </Styles.Resources>
 
-    <!--  ===== Buttons / Cards / Toolbar =====  -->
-
+    <!--  Toolbar icon buttons  -->
     <Style Selector="Button.IconBtn">
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="36" />
@@ -40,6 +31,7 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
 
+    <!--  Card containers  -->
     <Style Selector="Border.Card">
         <Setter Property="Background" Value="{DynamicResource Brush.Card}" />
         <Setter Property="CornerRadius" Value="{DynamicResource Radius.Card}" />
@@ -61,23 +53,11 @@
         <Setter Property="Margin" Value="2,0,0,8" />
     </Style>
 
-    <Style Selector="Button.ToolBtn">
-        <Setter Property="Padding" Value="8" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Foreground" Value="#E8EAF0" />
-    </Style>
-    <Style Selector="Button.ToolBtn:pointerover">
-        <Setter Property="Background" Value="#202531" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="10" />
-    </Style>
-
     <Style Selector="Separator.ToolSep">
         <Setter Property="Background" Value="{DynamicResource Brush.Border}" />
     </Style>
 
+    <!--  ================= Expander =================  -->
     <Style Selector="Expander">
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="Margin" Value="0,0,0,8" />
@@ -90,11 +70,14 @@
                     BorderThickness="1"
                     ClipToBounds="True"
                     CornerRadius="{DynamicResource Radius.Expander}">
-
                     <DockPanel LastChildFill="True">
+
+                        <!--  Header  -->
                         <ToggleButton
                             x:Name="PART_Header"
+                            MinHeight="36"
                             Padding="12,8"
+                            HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Stretch"
                             Background="#121316"
                             BorderBrush="{DynamicResource Brush.Border}"
@@ -103,7 +86,28 @@
                             DockPanel.Dock="Top"
                             IsChecked="{TemplateBinding IsExpanded,
                                                         Mode=TwoWay}">
-                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Header}" />
+                            <Grid ColumnDefinitions="Auto,8,*">
+                                <Border
+                                    x:Name="ChevronBox"
+                                    Grid.Column="0"
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                                    <iconPacks:PackIconMaterial
+                                        Width="12"
+                                        Height="12"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="#C8CCD6"
+                                        Kind="ChevronRight" />
+                                </Border>
+
+                                <TextBlock
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    Text="{TemplateBinding Header}" />
+                            </Grid>
                         </ToggleButton>
 
                         <Border Background="#22252B" CornerRadius="{DynamicResource Radius.Expander.Bottom}">
@@ -113,10 +117,169 @@
                                 Content="{TemplateBinding Content}"
                                 IsVisible="{TemplateBinding IsExpanded}" />
                         </Border>
+
                     </DockPanel>
                 </Border>
             </ControlTemplate>
         </Setter>
     </Style>
 
+    <Style Selector="ToggleButton#PART_Header:pointerover">
+        <Setter Property="Background" Value="#16181C" />
+    </Style>
+    <Style Selector="ToggleButton#PART_Header:checked">
+        <Setter Property="Background" Value="#15171B" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+    </Style>
+    <Style Selector="ToggleButton#PART_Header Border#ChevronBox">
+        <Setter Property="RenderTransform">
+            <TransformOperations>rotate(0deg)</TransformOperations>
+        </Setter>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="ToggleButton#PART_Header:checked Border#ChevronBox">
+        <Setter Property="RenderTransform">
+            <TransformOperations>rotate(90deg)</TransformOperations>
+        </Setter>
+    </Style>
+
+    <!--  ================= TreeView (Scene) =================  -->
+
+    <Style Selector="TreeViewItem">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="TreeViewItem">
+                <Grid ColumnDefinitions="32,*" RowDefinitions="Auto,Auto">
+
+
+                    <Border
+                        x:Name="RowBackground"
+                        Grid.Row="0"
+                        Grid.ColumnSpan="2"
+                        Margin="8,2"
+                        Padding="8,4"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="0"
+                        Classes="SceneItem"
+                        CornerRadius="8"
+                        ZIndex="1">
+                        <ContentPresenter
+                            x:Name="PART_HeaderPresenter"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Header}"
+                            ContentTemplate="{TemplateBinding HeaderTemplate}" />
+                    </Border>
+
+                    <ToggleButton
+                        x:Name="PART_Expander"
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="0"
+                        Focusable="False"
+                        IsChecked="{TemplateBinding IsExpanded,
+                                                    Mode=TwoWay}"
+                        ZIndex="2">
+                        <iconPacks:PackIconMaterial
+                            x:Name="Chevron"
+                            Width="14"
+                            Height="14"
+                            Margin="14,0,0,0"
+                            Foreground="#C8CCD6"
+                            Kind="ChevronRight">
+                            <iconPacks:PackIconMaterial.RenderTransform>
+                                <TransformOperations>rotate(0deg)</TransformOperations>
+                            </iconPacks:PackIconMaterial.RenderTransform>
+                            <iconPacks:PackIconMaterial.Transitions>
+                                <Transitions>
+                                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" />
+                                </Transitions>
+                            </iconPacks:PackIconMaterial.Transitions>
+                        </iconPacks:PackIconMaterial>
+                    </ToggleButton>
+                    <ItemsPresenter
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        IsVisible="{TemplateBinding IsExpanded}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="     TreeViewItem /template/ ToggleButton#PART_Expander,     TreeViewItem:pointerover /template/ ToggleButton#PART_Expander,     TreeViewItem:pressed /template/ ToggleButton#PART_Expander,     TreeViewItem:checked /template/ ToggleButton#PART_Expander,     TreeViewItem:unchecked /template/ ToggleButton#PART_Expander,     TreeViewItem:focus /template/ ToggleButton#PART_Expander,     TreeViewItem:disabled /template/ ToggleButton#PART_Expander">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="ToggleButton">
+                <ContentPresenter
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Content="{TemplateBinding Content}" />
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="TreeViewItem /template/ ToggleButton#PART_Expander:checked iconPacks|PackIconMaterial#Chevron">
+        <Setter Property="RenderTransform">
+            <TransformOperations>rotate(90deg)</TransformOperations>
+        </Setter>
+    </Style>
+
+    <Style Selector="TreeViewItem:empty /template/ ToggleButton#PART_Expander">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="TreeViewItem /template/ Border.SceneItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="TreeViewItem /template/ Border.SceneItem:pointerover">
+        <Setter Property="Background" Value="#202531" />
+    </Style>
+    <Style Selector="TreeViewItem:selected /template/ Border.SceneItem">
+        <Setter Property="Background" Value="#263449" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TreeViewItem:selected:focus /template/ Border.SceneItem">
+        <Setter Property="Background" Value="#263449" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="GridSplitter.HSplit">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Opacity" Value="0.6" />
+        <Setter Property="Margin" Value="0,4" />
+    </Style>
+    <Style Selector="GridSplitter.HSplit:pointerover">
+        <Setter Property="Opacity" Value="0.9" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="GridSplitter.HSplit:pressed">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="GridSplitter.VSplit">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Opacity" Value="0.6" />
+        <Setter Property="Margin" Value="4,0" />
+    </Style>
+    <Style Selector="GridSplitter.VSplit:pointerover">
+        <Setter Property="Opacity" Value="0.9" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="GridSplitter.VSplit:pressed">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
 </Styles>

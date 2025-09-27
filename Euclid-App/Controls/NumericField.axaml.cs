@@ -1,8 +1,9 @@
-﻿using System;
-using System.Globalization;
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using System;
+using System.Globalization;
 
 namespace EuclidApp.Controls
 {
@@ -48,13 +49,24 @@ namespace EuclidApp.Controls
         private bool _updatingText;
         private KeyModifiers _spinPressMods;
 
-        private const double ScrubThreshold = 4.0; 
+        private const double ScrubThreshold = 4.0;
 
         public NumericField()
         {
             InitializeComponent();
 
-            PART_Text.LostFocus += (_, __) => ParseTextToValue();
+            PART_Text.Cursor = new Cursor(StandardCursorType.SizeWestEast);
+            PART_Text.Focusable = false; 
+            PART_Text.IsReadOnly = true;
+
+            PART_Text.LostFocus += (_, __) =>
+            {
+                ParseTextToValue();
+                PART_Text.Focusable = false;
+                PART_Text.IsReadOnly = true;
+                PART_Text.Cursor = new Cursor(StandardCursorType.SizeWestEast);
+            };
+
             PART_Text.KeyDown += OnKeyDown;
 
             SpinLeft.PointerPressed += (_, e) => _spinPressMods = e.KeyModifiers;
@@ -63,9 +75,15 @@ namespace EuclidApp.Controls
             SpinLeft.Click += (_, __) => StepBy(-1, _spinPressMods);
             SpinRight.Click += (_, __) => StepBy(+1, _spinPressMods);
 
-            AddHandler(PointerPressedEvent, OnPointerPressed, handledEventsToo: true);
-            AddHandler(PointerReleasedEvent, OnPointerReleased, handledEventsToo: true);
-            AddHandler(PointerMovedEvent, OnPointerMoved, handledEventsToo: true);
+            // КЛЮЧЕВОЕ: ловим на Tunnel, чтобы опередить TextBox
+            AddHandler(InputElement.PointerPressedEvent, OnPointerPressed,
+                RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+
+            AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased,
+                RoutingStrategies.Tunnel | RoutingStrategies.Bubble, handledEventsToo: true);
+
+            AddHandler(InputElement.PointerMovedEvent, OnPointerMoved,
+                RoutingStrategies.Bubble, handledEventsToo: true);
 
             this.GetObservable(ValueProperty).Subscribe(_ =>
             {
@@ -76,6 +94,7 @@ namespace EuclidApp.Controls
             SyncTextFromValue();
         }
 
+
         private void SetEditGuard(bool on)
         {
             PART_Text.IsHitTestVisible = !on;
@@ -85,14 +104,16 @@ namespace EuclidApp.Controls
         // --- Blender-like: click vs scrub ---
         private void OnPointerPressed(object? s, PointerPressedEventArgs e)
         {
-            if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+            // только ЛКМ
+            var pt = e.GetCurrentPoint(this);
+            if (!pt.Properties.IsLeftButtonPressed) return;
 
             _pendingEdit = true;
             _scrubbing = false;
             _startPt = e.GetPosition(this);
             _startVal = Value ?? 0;
 
-            SetEditGuard(true); 
+            SetEditGuard(true);
             Cursor = new Cursor(StandardCursorType.SizeWestEast);
             e.Handled = true;
         }
@@ -139,6 +160,11 @@ namespace EuclidApp.Controls
             {
                 _pendingEdit = false;
                 SetEditGuard(false);
+
+                PART_Text.IsReadOnly = false;
+                PART_Text.Focusable = true;
+                PART_Text.Cursor = new Cursor(StandardCursorType.Ibeam);
+
                 PART_Text.Focus();
                 PART_Text.SelectAll();
                 e.Handled = true;
