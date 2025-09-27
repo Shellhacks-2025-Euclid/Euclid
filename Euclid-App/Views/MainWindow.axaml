@@ -156,6 +156,7 @@
                 Grid.Column="0"
                 MinWidth="220"
                 Margin="0" />
+            <ctrls:TrellisPrompt x:Name="Trellis" IsVisible="{Binding IsPromptOpen}" />
 
             <GridSplitter
                 Grid.Column="1"
@@ -181,7 +182,6 @@
                             Classes="CardHeader"
                             DockPanel.Dock="Top"
                             Text="Scene" />
-
                         <TreeView
                             VerticalAlignment="Stretch"
                             ItemsSource="{Binding Scene}"
@@ -222,7 +222,6 @@
                             Classes="CardHeader"
                             DockPanel.Dock="Top"
                             Text="Settings" />
-
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,4,0,0" Spacing="10">
                                 <Expander Header="Transform" IsExpanded="True">
@@ -230,7 +229,6 @@
                                         Margin="8,8,8,0"
                                         ColumnDefinitions="Auto,*"
                                         RowDefinitions="Auto,Auto,Auto, 12, Auto,Auto,Auto, 12, Auto,Auto,Auto">
-
                                         <!--  Location  -->
                                         <TextBlock
                                             Grid.Row="0"

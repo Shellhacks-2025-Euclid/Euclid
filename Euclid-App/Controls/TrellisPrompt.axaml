@@ -1,0 +1,236 @@
+<UserControl
+    x:Class="EuclidApp.Controls.TrellisPrompt"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:anim="clr-namespace:Avalonia.Animation;assembly=Avalonia.Animation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <UserControl.Styles>
+        <Styles>
+            <Styles.Resources>
+                <SolidColorBrush x:Key="Brush.Surface" Color="#15171B" />
+                <SolidColorBrush x:Key="Brush.Card" Color="#1E2127" />
+                <SolidColorBrush x:Key="Brush.Border" Color="#2C313A" />
+                <SolidColorBrush x:Key="Brush.Accent" Color="#5EA0EF" />
+                <CornerRadius x:Key="Radius.Card">12</CornerRadius>
+            </Styles.Resources>
+
+            <Style Selector="Button.IconBtnSmall">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="8" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Transitions">
+                    <Transitions>
+                        <BrushTransition Property="Background" Duration="0:0:0.12" />
+                        <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.12" />
+                    </Transitions>
+                </Setter>
+                <Style Selector="^:pointerover">
+                    <Setter Property="Background" Value="#1B1E24" />
+                    <Setter Property="BorderBrush" Value="#3A404B" />
+                </Style>
+                <Style Selector="^:pressed">
+                    <Setter Property="Background" Value="#171A1F" />
+                    <Setter Property="BorderBrush" Value="#2E333C" />
+                </Style>
+            </Style>
+
+            <Style Selector="Border.AttachmentChip">
+                <Setter Property="Background" Value="#181B20" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="6" />
+            </Style>
+
+            <Style Selector="TextBox.PromptBox">
+                <Setter Property="Background" Value="#0F1115" />
+                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="10,8" />
+                <Setter Property="Foreground" Value="#E9EEF7" />
+                <Setter Property="CaretBrush" Value="{DynamicResource Brush.Accent}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Watermark" Value="Describe what you want Trellis to sketch..." />
+                <Setter Property="AcceptsReturn" Value="True" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="MinHeight" Value="44" />
+                <Setter Property="MaxHeight" Value="180" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+                <Style Selector="^:focus">
+                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                </Style>
+            </Style>
+        </Styles>
+    </UserControl.Styles>
+
+    <Grid
+        x:Name="Root"
+        IsHitTestVisible="{Binding IsOpen}"
+        Opacity="{Binding PanelOpacity}">
+
+        <Border
+            x:Name="Backdrop"
+            Background="#CC0B0D12"
+            IsVisible="{Binding IsOpen}"
+            Opacity="{Binding PanelOpacity}">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+                </Transitions>
+            </Border.Transitions>
+        </Border>
+
+        <Border
+            x:Name="Panel"
+            MaxWidth="900"
+            Margin="16,0,16,16"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1"
+            BoxShadow="0 8 28 0 #00000066"
+            CornerRadius="{DynamicResource Radius.Card}"
+            IsVisible="{Binding IsOpen}"
+            Opacity="{Binding PanelOpacity}">
+            <Border.RenderTransform>
+                <TranslateTransform Y="{Binding SlideY}">
+                    <TranslateTransform.Transitions>
+                        <Transitions>
+                            <DoubleTransition Property="{x:Static TranslateTransform.YProperty}" Duration="0:0:0.16" />
+                        </Transitions>
+                    </TranslateTransform.Transitions>
+                </TranslateTransform>
+            </Border.RenderTransform>
+
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.16" />
+                </Transitions>
+            </Border.Transitions>
+
+            <Grid x:Name="DropZone" Margin="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <ItemsControl
+                    x:Name="PreviewItems"
+                    Grid.Row="0"
+                    ItemsSource="{Binding Attachments}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel
+                                ItemHeight="96"
+                                ItemWidth="120"
+                                Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Width="120"
+                                Height="80"
+                                Margin="0,0,8,8"
+                                Classes="AttachmentChip">
+                                <Border.Background>
+                                    <ImageBrush
+                                        AlignmentX="Center"
+                                        AlignmentY="Center"
+                                        Source="{Binding Thumbnail}"
+                                        Stretch="UniformToFill" />
+                                </Border.Background>
+
+                                <Border
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Background="#66000000"
+                                    CornerRadius="0,10,0,10">
+                                    <Button
+                                        Padding="6"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Tag="{Binding}">
+                                        <iconPacks:PackIconMaterial
+                                            Width="14"
+                                            Height="14"
+                                            Foreground="#E8E8E8"
+                                            Kind="Close" />
+                                    </Button>
+                                </Border>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Grid
+                    Grid.Row="1"
+                    Margin="0,0,0,8"
+                    ColumnDefinitions="Auto,*">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="AddBtn" Classes="IconBtnSmall">
+                            <iconPacks:PackIconMaterial
+                                Width="18"
+                                Height="18"
+                                Kind="Plus" />
+                            <ToolTip.Tip>Add images</ToolTip.Tip>
+                        </Button>
+
+                        <Button x:Name="PasteBtn" Classes="IconBtnSmall">
+                            <iconPacks:PackIconMaterial
+                                Width="18"
+                                Height="18"
+                                Kind="ContentPaste" />
+                            <ToolTip.Tip>Paste image (Ctrl+V)</ToolTip.Tip>
+                        </Button>
+
+                        <TextBlock
+                            Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            Opacity=".7"
+                            Text="Drop images here, click +, or paste from clipboard" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid
+                    Grid.Row="2"
+                    Margin="0,8,0,0"
+                    ColumnDefinitions="*,Auto">
+                    <TextBox
+                        x:Name="PromptBox"
+                        Classes="PromptBox"
+                        Text="{Binding Prompt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Button
+                        x:Name="SendBtn"
+                        Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Classes="IconBtnSmall"
+                        Command="{Binding SendCommand}"
+                        IsEnabled="{Binding CanSend}">
+                        <iconPacks:PackIconMaterial
+                            Width="18"
+                            Height="18"
+                            Kind="Send" />
+                        <ToolTip.Tip>Send (Enter)</ToolTip.Tip>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
