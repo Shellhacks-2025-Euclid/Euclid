@@ -180,12 +180,179 @@ void Core::InitShader() {
         FragColor = vec4(col, alpha);
     }
     )");
+    
+    translationVertex.Init(GL_VERTEX_SHADER,
+    R"(
+    #version 330 core
+    layout (location=0) in vec3 aStartWS;   // same for all 4 verts (per-axis)
+    layout (location=1) in vec3 aEndWS;     // same for all 4 verts (per-axis)
+    layout (location=2) in float aSide;     // 0 for start edge, 1 for end edge
+    layout (location=3) in float aCorner;   // -1 or +1 (offset direction)
+    layout (location=4) in vec3 aColor;     // axis color (RGB)
+
+    uniform mat4 uViewProj;
+    uniform vec2 uViewportPx;     // (w,h)
+    uniform float uLinePx;        // thickness in pixels
+
+    out vec3 vColor;
+
+    vec4 toClip(vec3 p){
+        return uViewProj * vec4(p,1.0);
+    }
+
+    void main()
+    {
+        vec4 P0 = toClip(aStartWS);
+        vec4 P1 = toClip(aEndWS);
+
+        // NDC positions
+        vec2 ndc0 = P0.xy / P0.w;
+        vec2 ndc1 = P1.xy / P1.w;
+
+        // line dir in NDC and its normal
+        vec2 dir = normalize(ndc1 - ndc0 + 1e-8);
+        vec2 nrm = vec2(-dir.y, dir.x);
+
+        // convert pixel size to NDC units
+        vec2 px2ndc = 2.0 / uViewportPx;   // 2 because NDC is [-1,1]
+        vec2 offsetNDC = nrm * aCorner * uLinePx * 0.5 * px2ndc;
+
+        // select clip endpoint and apply offset in clip space
+        vec4 P = mix(P0, P1, aSide);
+        vec2 ndc = (P.xy / P.w) + offsetNDC;
+
+        gl_Position = vec4(ndc * P.w, P.z, P.w);
+        vColor = aColor;
+    }
+    )");
+
+    translationFragment.Init(GL_FRAGMENT_SHADER,
+    R"(
+    #version 330 core
+    in vec3 vColor;
+    out vec4 FragColor;
+
+    void main(){
+        FragColor = vec4(vColor, 1.0); // opaque lines
+    }
+    )");
+    
+    rotationVertex.Init(GL_VERTEX_SHADER,
+    R"(
+    #version 330 core
+    // We draw with glDrawArrays(GL_TRIANGLE_STRIP, 0, 2*N)
+    // where N = uSegments+1 to close the loop.
+
+    uniform mat4 uModel;          // gizmo transform
+    uniform mat4 uViewProj;
+    uniform vec2 uViewportPx;
+    uniform float uRadius;        // world radius of the ring
+    uniform float uRingPx;        // ring thickness (pixels)
+    uniform int uSegments;        // e.g., 64
+    uniform vec3 uAxis;           // ring axis in object space (unit)
+    uniform vec3 uColor;
+
+    out vec3 vColor;
+
+    vec3 anyPerp(vec3 n){
+        return normalize(abs(n.z) < 0.9 ? cross(n, vec3(0,0,1)) : cross(n, vec3(0,1,0)));
+    }
+
+    void main(){
+        int i = gl_VertexID / 2;                 // segment index
+        int side = gl_VertexID & 1;              // 0/1 = inner/outer side
+
+        // Build orthonormal basis in object space for the ring plane
+        vec3 N = normalize(uAxis);
+        vec3 X = anyPerp(N);
+        vec3 Y = normalize(cross(N, X));
+
+        float t = 2.0*3.14159265 * float(i) / float(uSegments);
+        vec3 posOS = X * cos(t) + Y * sin(t);
+        vec3 centerWS = (uModel * vec4(0,0,0,1)).xyz;
+        vec3 pWS = (uModel * vec4(posOS * uRadius, 1.0)).xyz;
+
+        // Clip endpoints for current and next sample (for NDC direction)
+        // Compute neighbor on circle to get screen tangent
+        float tN = 2.0*3.14159265 * float((i+1) % uSegments) / float(uSegments);
+        vec3 pNextWS = (uModel * vec4((X*cos(tN) + Y*sin(tN)) * uRadius, 1.0)).xyz;
+
+        vec4 P  = uViewProj * vec4(pWS, 1.0);
+        vec4 PN = uViewProj * vec4(pNextWS, 1.0);
+
+        vec2 ndc  = P.xy  / P.w;
+        vec2 ndcN = PN.xy / PN.w;
+
+        // screen tangent and outward normal in NDC
+        vec2 tg = normalize(ndcN - ndc + 1e-8);
+        vec2 n2 = vec2(-tg.y, tg.x);
+
+        // pixel to NDC
+        vec2 px2ndc = 2.0 / uViewportPx;
+        vec2 offset = n2 * (side == 0 ? -1.0 : 1.0) * (uRingPx * 0.5) * px2ndc;
+
+        gl_Position = vec4((ndc + offset) * P.w, P.z, P.w);
+        vColor = uColor;
+    }
+    )");
+
+    rotationFragment.Init(GL_FRAGMENT_SHADER,
+    R"(
+    #version 330 core
+    in vec3 vColor;
+    out vec4 FragColor;
+    void main(){ FragColor = vec4(vColor, 1.0); }
+    )");
+    
+    transformationVertex.Init(GL_VERTEX_SHADER,
+    R"(
+    #version 330 core
+    layout (location=0) in vec3 aCenterWS;  // handle center (axis end in WS)
+    layout (location=1) in vec3 aColor;
+    layout (location=2) in vec2 aCorner;    // (-1,-1),(-1,1),(1,-1),(1,1)
+
+    uniform mat4 uViewProj;
+    uniform vec2 uViewportPx;
+    uniform float uSizePx;        // square edge in pixels
+
+    out vec3 vColor;
+
+    vec4 toClip(vec3 p){ return uViewProj * vec4(p,1); }
+
+    void main(){
+        vec4 P = toClip(aCenterWS);
+        vec2 px2ndc = 2.0 / uViewportPx;
+        vec2 offset = aCorner * (uSizePx * 0.5) * px2ndc;
+
+        vec2 ndc = P.xy / P.w + offset;
+        gl_Position = vec4(ndc * P.w, P.z, P.w);
+        vColor = aColor;
+    }
+    )");
+
+    transformationFragment.Init(GL_FRAGMENT_SHADER,
+    R"(
+    #version 330 core
+    in vec3 vColor;
+    out vec4 FragColor;
+    void main(){ FragColor = vec4(vColor, 1.0); }
+    )");
+    
     // link programs
     std::vector<unsigned int> mainShaderIDs = { mainVertex.GetID(), mainFragment.GetID() };
     mainShader.Init(mainShaderIDs);
 
     std::vector<unsigned int> gridShaderIDs = { gridVertex.GetID(), gridFragment.GetID() };
     gridShader.Init(gridShaderIDs);
+    
+    std::vector<unsigned int> translationShaderIDs = { translationVertex.GetID(), translationFragment.GetID() };
+    translationShader.Init(translationShaderIDs);
+    
+    std::vector<unsigned int> rotationShaderIDs = { rotationVertex.GetID(), rotationFragment.GetID() };
+    rotationShader.Init(rotationShaderIDs);
+    
+    std::vector<unsigned int> transformationShaderIDs = { transformationVertex.GetID(), transformationFragment.GetID() };
+    transformationShader.Init(transformationShaderIDs);
 
     // create dummy VAO (core profile needs some VAO bound)
     glGenVertexArrays(1, &mDummyVAO);
@@ -207,6 +374,7 @@ void Core::InitShader() {
 void Core::UseShader() {
     mainShader.Use();
     gridShader.Use();
+    rotationShader.Use();
 }
 }
 
