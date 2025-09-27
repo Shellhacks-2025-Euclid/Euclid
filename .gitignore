@@ -47,8 +47,6 @@ DerivedData/
 ### Premake ###
 Makefile
 *.make
-*.sh
-*.bat
 *.sln
 *.vcxproj*
 *.xcodeproj/
@@ -58,18 +56,12 @@ Makefile
 *.o
 *.lo
 *.la
-*.a
-*.lib
 *.dll
 *.so
-*.dylib
-*.exe
 *.out
 *.app
 
 ### C# ###
-*.exe
-*.dll
 *.pdb
 *.cache
 *.config
