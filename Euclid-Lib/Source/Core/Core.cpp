@@ -122,33 +122,64 @@ void Core::Update(float dtSeconds) {
     mModel = glm::mat4(1.0f);
 }
 void Core::Render() {
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    mainShader.Use();
-
-    // Projection (use camera FOV)
+    // --- camera matrices ---
     float aspect = (mHeight > 0) ? (float)mWidth / (float)mHeight : 1.0f;
     glm::mat4 projection = glm::perspective(glm::radians(mainCamera.GetZoom()), aspect, 0.1f, 100.0f);
-
-    // View (camera looks at its target)
     glm::mat4 view = mainCamera.GetViewMatrix();
+    glm::mat4 invVP = glm::inverse(projection * view);
 
-    // Model
+    // If your Camera exposes position, use that:
+    // glm::vec3 camPos = mainCamera.GetPosition();
+    // Otherwise extract from view matrix:
+    glm::mat4 invView = glm::inverse(view);
+    glm::vec3 camPos = glm::vec3(invView[3]); // translation of inverse(view)
+    glm::mat4 viewProj = projection * view;
+
+    // --- MAIN SCENE (cube) ---
+    mainShader.Use();
     glm::mat4 model = mModel;
 
-    // Upload uniforms
     GLint locModel = glGetUniformLocation(mainShader.GetID(), "uModel");
     GLint locView  = glGetUniformLocation(mainShader.GetID(), "uView");
     GLint locProj  = glGetUniformLocation(mainShader.GetID(), "uProjection");
-
     glUniformMatrix4fv(locModel, 1, GL_FALSE, &model[0][0]);
     glUniformMatrix4fv(locView,  1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(locProj,  1, GL_FALSE, &projection[0][0]);
 
     glBindVertexArray(mVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36 + 3);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+    
+    // --- GRID BACKGROUND PASS ---
+    glBindVertexArray(mDummyVAO);   // or mVAO if you don't want a dummy
+    glDepthMask(GL_FALSE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    glUseProgram(gridShader.GetID());
+    GLint locInvVP = glGetUniformLocation(gridShader.GetID(), "uInvViewProj");
+    GLint locCam   = glGetUniformLocation(gridShader.GetID(), "uCamPos");
+    glUniformMatrix4fv(locInvVP, 1, GL_FALSE, &invVP[0][0]);
+    glUniform3fv(locCam, 1, &camPos[0]);
+    
+    glUseProgram(gridShader.GetID());
+    glUniformMatrix4fv(glGetUniformLocation(gridShader.GetID(),"uInvViewProj"), 1, GL_FALSE, &invVP[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(gridShader.GetID(),"uViewProj"),    1, GL_FALSE, &viewProj[0][0]);
+    glUniform3fv(glGetUniformLocation(gridShader.GetID(),"uCamPos"), 1, &camPos[0]);
+
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    
+    // restore default
+    glDepthFunc(GL_LESS);
+    glDepthMask(GL_TRUE);
+
+    glUseProgram(0);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 }
 void Core::OnMouseMove(double x, double y) {
     const bool orbiting = sCtrlDown || sMMBDown;

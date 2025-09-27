@@ -30,6 +30,7 @@ private:
     int mHeight;
     unsigned int mVAO = 0;
     unsigned int mVBO = 0;
+    unsigned int mDummyVAO = 0;
     
     Camera mainCamera;
     float mLastMouseX = 0.f, mLastMouseY = 0.f;
@@ -41,6 +42,10 @@ private:
     Shader mainVertex;
     Shader mainFragment;
     ShaderProgram mainShader;
+    
+    Shader gridVertex;
+    Shader gridFragment;
+    ShaderProgram gridShader;
 };
 }
 
