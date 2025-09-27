@@ -65,7 +65,10 @@ namespace EuclidApp.Interop
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Euclid_OnScroll(IntPtr h, double dx, double dy);
 
-        private static byte ToEuclidMods(KeyModifiers km)
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void Euclid_OnMods(IntPtr h, byte mods);
+
+        public static byte ToEuclidMods(KeyModifiers km)
         {
             byte m = 0;
             if ((km & KeyModifiers.Shift) != 0) m |= EuclidMods.SHIFT;
