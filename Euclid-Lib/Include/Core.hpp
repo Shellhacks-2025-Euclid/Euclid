@@ -27,6 +27,8 @@ public:
 private:
     int mWidth;
     int mHeight;
+    unsigned int mVAO = 0;
+    unsigned int mVBO = 0;
 };
 }
 
