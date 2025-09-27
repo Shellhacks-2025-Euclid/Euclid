@@ -25,28 +25,34 @@
         <Style Selector="Border#Root:focus-within">
             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
             <Setter Property="Background" Value="#31343A" />
-            <Setter Property="Cursor" Value="Ibeam" />
         </Style>
 
         <Style Selector="TextBox.nf-input">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="22,8,35,4" />
+            <Setter Property="Padding" Value="24,8,24,4" />
             <Setter Property="FontSize" Value="13" />
-
             <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Segoe UI" />
             <Setter Property="Foreground" Value="#F0F0F0" />
-            <Setter Property="HorizontalContentAlignment" Value="Right" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="CaretBrush" Value="{DynamicResource Brush.Accent}" />
             <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}" />
+            <Setter Property="Cursor" Value="SizeWestEast" />
         </Style>
+
 
         <Style Selector="TextBox.nf-input:pointerover,                          TextBox.nf-input:focus,                          TextBox.nf-input:focus-visible,                          TextBox.nf-input:focus-within,                          TextBox.nf-input:disabled">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="SizeWestEast" />
+        </Style>
+
+        <Style Selector="TextBox.nf-input:focus, TextBox.nf-input:focus-within">
+            <Setter Property="Cursor" Value="SizeWestEast" />
         </Style>
 
         <Style Selector="TextBox.nf-input /template/ Border">

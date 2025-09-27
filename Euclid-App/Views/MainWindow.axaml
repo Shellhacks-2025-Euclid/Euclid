@@ -150,19 +150,43 @@
             </ScrollViewer>
         </Border>
 
-        <Grid Margin="8,4,8,8" ColumnDefinitions="*, 340">
-            <!--  Viewport (заглушка)  -->
-            <views:ViewportPlaceholder Grid.Column="0" Margin="0,0,8,0" />
+        <Grid Margin="8,4,8,8" ColumnDefinitions="*, Auto, 340">
+            <!--  Viewport  -->
+            <views:ViewportPlaceholder
+                Grid.Column="0"
+                MinWidth="220"
+                Margin="0" />
 
-            <StackPanel Grid.Column="1" Spacing="8">
-                <!--  Scene  -->
-                <Border Classes="Card">
-                    <DockPanel>
+            <GridSplitter
+                Grid.Column="1"
+                Width="6"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Classes="VSplit"
+                Cursor="SizeWestEast"
+                ResizeDirection="Columns"
+                ShowsPreview="True" />
+
+            <Grid
+                Grid.Column="2"
+                MinWidth="280"
+                RowDefinitions="*, Auto, *">
+                <!--  SCENE  -->
+                <Border
+                    Grid.Row="0"
+                    MinHeight="120"
+                    Classes="Card">
+                    <DockPanel LastChildFill="True">
                         <TextBlock
                             Classes="CardHeader"
                             DockPanel.Dock="Top"
                             Text="Scene" />
-                        <TreeView ItemsSource="{Binding Scene}" SelectedItem="{Binding Selected, Mode=TwoWay}">
+
+                        <TreeView
+                            VerticalAlignment="Stretch"
+                            ItemsSource="{Binding Scene}"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            SelectedItem="{Binding Selected, Mode=TwoWay}">
                             <TreeView.DataTemplates>
                                 <TreeDataTemplate DataType="vm:SceneNode" ItemsSource="{Binding Children}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -178,210 +202,198 @@
                     </DockPanel>
                 </Border>
 
-                <!--  Settings  -->
-                <Border Classes="Card">
+                <GridSplitter
+                    Grid.Row="1"
+                    Height="6"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Classes="HSplit"
+                    Cursor="SizeNorthSouth"
+                    ResizeDirection="Rows"
+                    ShowsPreview="True" />
+
+                <!--  SETTINGS  -->
+                <Border
+                    Grid.Row="2"
+                    MinHeight="160"
+                    Classes="Card">
                     <DockPanel>
                         <TextBlock
                             Classes="CardHeader"
                             DockPanel.Dock="Top"
                             Text="Settings" />
-                        <StackPanel Spacing="10">
-                            <Expander Header="Transform" IsExpanded="True">
-                                <Grid
-                                    Margin="8,8,8,0"
-                                    ColumnDefinitions="Auto,*"
-                                    RowDefinitions="Auto,Auto,Auto, 12,                         Auto,Auto,Auto, 12,                         Auto,           12,                         Auto,Auto,Auto">
 
-                                    <!--  Location  -->
-                                    <TextBlock
-                                        Grid.Row="0"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Location X" />
-                                    <ctrls:NumericField
-                                        Grid.Row="0"
-                                        Grid.Column="1"
-                                        Decimals="3"
-                                        Step="0.1"
-                                        Value="{Binding Selected.Transform.PosX, Mode=TwoWay}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,4,0,0" Spacing="10">
+                                <Expander Header="Transform" IsExpanded="True">
+                                    <Grid
+                                        Margin="8,8,8,0"
+                                        ColumnDefinitions="Auto,*"
+                                        RowDefinitions="Auto,Auto,Auto, 12, Auto,Auto,Auto, 12, Auto,Auto,Auto">
 
-                                    <TextBlock
-                                        Grid.Row="1"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Y" />
-                                    <ctrls:NumericField
-                                        Grid.Row="1"
-                                        Grid.Column="1"
-                                        Decimals="3"
-                                        Step="0.1"
-                                        Value="{Binding Selected.Transform.PosY, Mode=TwoWay}" />
+                                        <!--  Location  -->
+                                        <TextBlock
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Location X" />
+                                        <ctrls:NumericField
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            Decimals="3"
+                                            Step="0.1"
+                                            Value="{Binding Selected.Transform.PosX, Mode=TwoWay}" />
 
-                                    <TextBlock
-                                        Grid.Row="2"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Z" />
-                                    <ctrls:NumericField
-                                        Grid.Row="2"
-                                        Grid.Column="1"
-                                        Decimals="3"
-                                        Step="0.1"
-                                        Value="{Binding Selected.Transform.PosZ, Mode=TwoWay}" />
+                                        <TextBlock
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Y" />
+                                        <ctrls:NumericField
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Decimals="3"
+                                            Step="0.1"
+                                            Value="{Binding Selected.Transform.PosY, Mode=TwoWay}" />
 
-                                    <!--  spacer  -->
-                                    <Rectangle
-                                        Grid.Row="3"
-                                        Grid.ColumnSpan="2"
-                                        Height="1"
-                                        Fill="{DynamicResource Brush.Border}"
-                                        Opacity=".35" />
+                                        <TextBlock
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Z" />
+                                        <ctrls:NumericField
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            Decimals="3"
+                                            Step="0.1"
+                                            Value="{Binding Selected.Transform.PosZ, Mode=TwoWay}" />
 
-                                    <TextBlock
-                                        Grid.Row="4"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Rotation X" />
-                                    <ctrls:NumericField
-                                        Grid.Row="4"
-                                        Grid.Column="1"
-                                        Decimals="2"
-                                        Max="360"
-                                        Min="0"
-                                        Step="1"
-                                        Suffix="°"
-                                        Wrap="True"
-                                        Value="{Binding Selected.Transform.RotX, Mode=TwoWay}" />
+                                        <Rectangle
+                                            Grid.Row="3"
+                                            Grid.ColumnSpan="2"
+                                            Height="1"
+                                            Fill="{DynamicResource Brush.Border}"
+                                            Opacity=".35" />
 
-                                    <TextBlock
-                                        Grid.Row="5"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Y" />
-                                    <ctrls:NumericField
-                                        Grid.Row="5"
-                                        Grid.Column="1"
-                                        Decimals="2"
-                                        Max="360"
-                                        Min="0"
-                                        Step="1"
-                                        Suffix="°"
-                                        Wrap="True"
-                                        Value="{Binding Selected.Transform.RotY, Mode=TwoWay}" />
+                                        <!--  Rotation  -->
+                                        <TextBlock
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Rotation X" />
+                                        <ctrls:NumericField
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            Decimals="2"
+                                            Max="360"
+                                            Min="0"
+                                            Step="1"
+                                            Suffix="°"
+                                            Wrap="True"
+                                            Value="{Binding Selected.Transform.RotX, Mode=TwoWay}" />
 
-                                    <TextBlock
-                                        Grid.Row="6"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Z" />
-                                    <ctrls:NumericField
-                                        Grid.Row="6"
-                                        Grid.Column="1"
-                                        Decimals="2"
-                                        Max="360"
-                                        Min="0"
-                                        Step="1"
-                                        Suffix="°"
-                                        Wrap="True"
-                                        Value="{Binding Selected.Transform.RotZ, Mode=TwoWay}" />
+                                        <TextBlock
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Y" />
+                                        <ctrls:NumericField
+                                            Grid.Row="5"
+                                            Grid.Column="1"
+                                            Decimals="2"
+                                            Max="360"
+                                            Min="0"
+                                            Step="1"
+                                            Suffix="°"
+                                            Wrap="True"
+                                            Value="{Binding Selected.Transform.RotY, Mode=TwoWay}" />
 
-                                    <!--  spacer  -->
-                                    <Rectangle
-                                        Grid.Row="7"
-                                        Grid.ColumnSpan="2"
-                                        Height="1"
-                                        Fill="{DynamicResource Brush.Border}"
-                                        Opacity=".35" />
+                                        <TextBlock
+                                            Grid.Row="6"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Z" />
+                                        <ctrls:NumericField
+                                            Grid.Row="6"
+                                            Grid.Column="1"
+                                            Decimals="2"
+                                            Max="360"
+                                            Min="0"
+                                            Step="1"
+                                            Suffix="°"
+                                            Wrap="True"
+                                            Value="{Binding Selected.Transform.RotZ, Mode=TwoWay}" />
 
-                                    <TextBlock
-                                        Grid.Row="8"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Mode" />
-                                    <ComboBox
-                                        Grid.Row="8"
-                                        Grid.Column="1"
-                                        Height="32"
-                                        SelectedIndex="0">
-                                        <ComboBoxItem>XYZ Euler</ComboBoxItem>
-                                        <ComboBoxItem>XZY Euler</ComboBoxItem>
-                                        <ComboBoxItem>YXZ Euler</ComboBoxItem>
-                                        <ComboBoxItem>YZX Euler</ComboBoxItem>
-                                        <ComboBoxItem>ZXY Euler</ComboBoxItem>
-                                        <ComboBoxItem>ZYX Euler</ComboBoxItem>
-                                    </ComboBox>
+                                        <Rectangle
+                                            Grid.Row="7"
+                                            Grid.ColumnSpan="2"
+                                            Height="1"
+                                            Fill="{DynamicResource Brush.Border}"
+                                            Opacity=".35" />
 
-                                    <!--  spacer  -->
-                                    <Rectangle
-                                        Grid.Row="9"
-                                        Grid.ColumnSpan="2"
-                                        Height="1"
-                                        Fill="{DynamicResource Brush.Border}"
-                                        Opacity=".35" />
+                                        <!--  Scale  -->
+                                        <TextBlock
+                                            Grid.Row="8"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Scale X" />
+                                        <ctrls:NumericField
+                                            Grid.Row="8"
+                                            Grid.Column="1"
+                                            Decimals="3"
+                                            Min="0.001"
+                                            Step="0.05"
+                                            Value="{Binding Selected.Transform.SclX, Mode=TwoWay}" />
 
-                                    <!--  Scale  -->
-                                    <TextBlock
-                                        Grid.Row="10"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Scale X" />
-                                    <ctrls:NumericField
-                                        Grid.Row="10"
-                                        Grid.Column="1"
-                                        Decimals="3"
-                                        Min="0.001"
-                                        Step="0.05"
-                                        Value="{Binding Selected.Transform.SclX, Mode=TwoWay}" />
+                                        <TextBlock
+                                            Grid.Row="9"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Y" />
+                                        <ctrls:NumericField
+                                            Grid.Row="9"
+                                            Grid.Column="1"
+                                            Decimals="3"
+                                            Min="0.001"
+                                            Step="0.05"
+                                            Value="{Binding Selected.Transform.SclY, Mode=TwoWay}" />
 
-                                    <TextBlock
-                                        Grid.Row="11"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Y" />
-                                    <ctrls:NumericField
-                                        Grid.Row="11"
-                                        Grid.Column="1"
-                                        Decimals="3"
-                                        Min="0.001"
-                                        Step="0.05"
-                                        Value="{Binding Selected.Transform.SclY, Mode=TwoWay}" />
+                                        <TextBlock
+                                            Grid.Row="10"
+                                            Grid.Column="0"
+                                            Margin="0,4,12,4"
+                                            VerticalAlignment="Center"
+                                            Text="Z" />
+                                        <ctrls:NumericField
+                                            Grid.Row="10"
+                                            Grid.Column="1"
+                                            Decimals="3"
+                                            Min="0.001"
+                                            Step="0.05"
+                                            Value="{Binding Selected.Transform.SclZ, Mode=TwoWay}" />
+                                    </Grid>
+                                </Expander>
 
-                                    <TextBlock
-                                        Grid.Row="12"
-                                        Grid.Column="0"
-                                        Margin="0,4,12,4"
-                                        VerticalAlignment="Center"
-                                        Text="Z" />
-                                    <ctrls:NumericField
-                                        Grid.Row="12"
-                                        Grid.Column="1"
-                                        Decimals="3"
-                                        Min="0.001"
-                                        Step="0.05"
-                                        Value="{Binding Selected.Transform.SclZ, Mode=TwoWay}" />
-                                </Grid>
-                            </Expander>
-
-                            <Border
-                                Padding="6"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1"
-                                CornerRadius="8">
-                                <TextBlock Opacity="0.7" Text="Per object specified settings" />
-                            </Border>
-                        </StackPanel>
+                                <Border
+                                    Padding="6"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="8">
+                                    <TextBlock Opacity="0.7" Text="Per object specified settings" />
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
                     </DockPanel>
                 </Border>
-            </StackPanel>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>
