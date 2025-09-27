@@ -1,0 +1,1 @@
+# Euclid Next.js app
