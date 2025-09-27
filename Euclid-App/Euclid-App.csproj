@@ -1,0 +1,84 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <AssemblyName>Euclid-App</AssemblyName>
+    <RootNamespace>EuclidApp</RootNamespace>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <FileAlignment>512</FileAlignment>
+    <ApplicationIcon>EuclidIconDesign.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>WINDOWS;DEBUG</DefineConstants>
+    <OutputPath>..\Binaries\windows-x86_64\Debug\Euclid-App\</OutputPath>
+    <BaseIntermediateOutputPath>..\Binaries\Intermediates\windows-x86_64\Debug\Euclid-App\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <Optimize>false</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <WarningLevel>4</WarningLevel>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DefineConstants>WINDOWS;RELEASE</DefineConstants>
+    <OutputPath>..\Binaries\windows-x86_64\Release\Euclid-App\</OutputPath>
+    <BaseIntermediateOutputPath>..\Binaries\Intermediates\windows-x86_64\Release\Euclid-App\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <Optimize>true</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <WarningLevel>4</WarningLevel>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
+    <DefineConstants>WINDOWS;DIST</DefineConstants>
+    <OutputPath>..\Binaries\windows-x86_64\Dist\Euclid-App\</OutputPath>
+    <BaseIntermediateOutputPath>..\Binaries\Intermediates\windows-x86_64\Dist\Euclid-App\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <Optimize>true</Optimize>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <WarningLevel>4</WarningLevel>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.6" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.6" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.6" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.3.6" />
+    <PackageReference Include="Avalonia.Win32" Version="11.3.6" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="IconPacks.Avalonia" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Euclid-Lib\Euclid-Lib.vcxproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Source\" />
+    <Folder Include="Source\" />
+    <Folder Include="Services\" />
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Remove="mss9r-aqy56-001.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="EuclidIconDesign.ico" />
+  </ItemGroup>
+
+</Project>

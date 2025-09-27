@@ -1,0 +1,122 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:euclid="clr-namespace:EuclidApp.Controls;assembly=Euclid-App">
+
+    <Styles.Resources>
+
+        <SolidColorBrush x:Key="Brush.Surface" Color="#15171B" />
+        <SolidColorBrush x:Key="Brush.Card" Color="#1E2127" />
+        <SolidColorBrush x:Key="Brush.Border" Color="#2C313A" />
+        <SolidColorBrush x:Key="Brush.BorderStrong" Color="#3A404C" />
+        <SolidColorBrush x:Key="Brush.Accent" Color="#5EA0EF" />
+        <SolidColorBrush x:Key="Brush.ViewportBg" Color="#121417" />
+        <SolidColorBrush x:Key="Brush.ViewportTile" Color="#22262E" />
+
+        <Thickness x:Key="Gap.Outer">8</Thickness>
+        <CornerRadius x:Key="Radius.Card">12</CornerRadius>
+        <CornerRadius x:Key="Radius.Expander">10</CornerRadius>
+
+        <CornerRadius x:Key="Radius.Expander.All">10</CornerRadius>
+        <CornerRadius x:Key="Radius.Expander.Bottom">0,0,10,10</CornerRadius>
+    </Styles.Resources>
+
+    <!--  ===== Buttons / Cards / Toolbar =====  -->
+
+    <Style Selector="Button.IconBtn">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="6" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Foreground" Value="#E8EAF0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.IconBtn:pointerover">
+        <Setter Property="Background" Value="#202531" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Border.Card">
+        <Setter Property="Background" Value="{DynamicResource Brush.Card}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Radius.Card}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="8" />
+    </Style>
+
+    <Style Selector="Border.Toolbar">
+        <Setter Property="Background" Value="#1A1D23" />
+        <Setter Property="CornerRadius" Value="{DynamicResource Radius.Card}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="TextBlock.CardHeader">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="2,0,0,8" />
+    </Style>
+
+    <Style Selector="Button.ToolBtn">
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="#E8EAF0" />
+    </Style>
+    <Style Selector="Button.ToolBtn:pointerover">
+        <Setter Property="Background" Value="#202531" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+    </Style>
+
+    <Style Selector="Separator.ToolSep">
+        <Setter Property="Background" Value="{DynamicResource Brush.Border}" />
+    </Style>
+
+    <Style Selector="Expander">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+        <Setter Property="Background" Value="{DynamicResource Brush.Card}" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Expander">
+                <Border
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1"
+                    ClipToBounds="True"
+                    CornerRadius="{DynamicResource Radius.Expander}">
+
+                    <DockPanel LastChildFill="True">
+                        <ToggleButton
+                            x:Name="PART_Header"
+                            Padding="12,8"
+                            HorizontalContentAlignment="Stretch"
+                            Background="#121316"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            CornerRadius="{DynamicResource Radius.Expander}"
+                            DockPanel.Dock="Top"
+                            IsChecked="{TemplateBinding IsExpanded,
+                                                        Mode=TwoWay}">
+                            <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding Header}" />
+                        </ToggleButton>
+
+                        <Border Background="#22252B" CornerRadius="{DynamicResource Radius.Expander.Bottom}">
+                            <ContentPresenter
+                                x:Name="PART_ContentPresenter"
+                                Margin="8"
+                                Content="{TemplateBinding Content}"
+                                IsVisible="{TemplateBinding IsExpanded}" />
+                        </Border>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+</Styles>

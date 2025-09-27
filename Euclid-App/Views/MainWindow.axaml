@@ -1,0 +1,387 @@
+<Window
+    x:Class="EuclidApp.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ctrls="clr-namespace:EuclidApp.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:views="clr-namespace:EuclidApp.Views"
+    xmlns:vm="clr-namespace:EuclidApp.ViewModels"
+    Title="Euclid"
+    Width="1280"
+    Height="800"
+    Background="{DynamicResource Brush.Surface}"
+    mc:Ignorable="d">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <DockPanel>
+
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="New Scene" />
+                <MenuItem Header="Open..." />
+                <MenuItem Header="Save" />
+                <MenuItem Header="Save As..." />
+                <Separator />
+                <MenuItem Header="Exit" />
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Command="{Binding UndoCommand}" Header="Undo" />
+                <MenuItem Command="{Binding RedoCommand}" Header="Redo" />
+            </MenuItem>
+            <MenuItem Header="_Render">
+                <MenuItem Command="{Binding RenderSettingsCommand}" Header="Render Image" />
+            </MenuItem>
+            <MenuItem Header="_Window" />
+            <MenuItem Header="_Help" />
+        </Menu>
+
+        <Border
+            Margin="8,8,8,4"
+            Padding="8"
+            Classes="Toolbar"
+            DockPanel.Dock="Top">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button Classes="IconBtn" Command="{Binding UndoCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="Undo" />
+                        <ToolTip.Tip>Undo</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding RedoCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="Redo" />
+                        <ToolTip.Tip>Redo</ToolTip.Tip>
+                    </Button>
+
+                    <Separator Width="1" Classes="ToolSep" />
+
+                    <Button Classes="IconBtn" Command="{Binding SelectCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="CursorDefaultOutline" />
+                        <ToolTip.Tip>Cursor</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding TranslateCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="AxisArrow" />
+                        <ToolTip.Tip>Translate</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding RotateCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="Rotate3d" />
+                        <ToolTip.Tip>Rotate</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding ScaleCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="Resize" />
+                        <ToolTip.Tip>Resize</ToolTip.Tip>
+                    </Button>
+
+                    <Separator Width="1" Classes="ToolSep" />
+
+                    <Button Classes="IconBtn" Command="{Binding AiSketchCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="MagicStaff" />
+                        <ToolTip.Tip>Trellis</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding CameraCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="CameraOutline" />
+                        <ToolTip.Tip>Camera</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding LightCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="LightbulbOutline" />
+                        <ToolTip.Tip>Light</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding RenderSettingsCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="CogPlayOutline" />
+                        <ToolTip.Tip>Render</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding GridSettingsCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="Grid" />
+                        <ToolTip.Tip>Grid</ToolTip.Tip>
+                    </Button>
+
+                    <Button Classes="IconBtn" Command="{Binding SceneSettingsCommand}">
+                        <iconPacks:PackIconMaterial
+                            Width="20"
+                            Height="20"
+                            Kind="ViewListOutline" />
+                        <ToolTip.Tip>Scene</ToolTip.Tip>
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Grid Margin="8,4,8,8" ColumnDefinitions="*, 340">
+            <!--  Viewport (заглушка)  -->
+            <views:ViewportPlaceholder Grid.Column="0" Margin="0,0,8,0" />
+
+            <StackPanel Grid.Column="1" Spacing="8">
+                <!--  Scene  -->
+                <Border Classes="Card">
+                    <DockPanel>
+                        <TextBlock
+                            Classes="CardHeader"
+                            DockPanel.Dock="Top"
+                            Text="Scene" />
+                        <TreeView ItemsSource="{Binding Scene}" SelectedItem="{Binding Selected, Mode=TwoWay}">
+                            <TreeView.DataTemplates>
+                                <TreeDataTemplate DataType="vm:SceneNode" ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Path
+                                            Width="14"
+                                            Height="14"
+                                            Data="{DynamicResource Icon.MeshSmall}" />
+                                        <TextBlock Text="{Binding Name}" />
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.DataTemplates>
+                        </TreeView>
+                    </DockPanel>
+                </Border>
+
+                <!--  Settings  -->
+                <Border Classes="Card">
+                    <DockPanel>
+                        <TextBlock
+                            Classes="CardHeader"
+                            DockPanel.Dock="Top"
+                            Text="Settings" />
+                        <StackPanel Spacing="10">
+                            <Expander Header="Transform" IsExpanded="True">
+                                <Grid
+                                    Margin="8,8,8,0"
+                                    ColumnDefinitions="Auto,*"
+                                    RowDefinitions="Auto,Auto,Auto, 12,                         Auto,Auto,Auto, 12,                         Auto,           12,                         Auto,Auto,Auto">
+
+                                    <!--  Location  -->
+                                    <TextBlock
+                                        Grid.Row="0"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Location X" />
+                                    <ctrls:NumericField
+                                        Grid.Row="0"
+                                        Grid.Column="1"
+                                        Decimals="3"
+                                        Step="0.1"
+                                        Value="{Binding Selected.Transform.PosX, Mode=TwoWay}" />
+
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Y" />
+                                    <ctrls:NumericField
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        Decimals="3"
+                                        Step="0.1"
+                                        Value="{Binding Selected.Transform.PosY, Mode=TwoWay}" />
+
+                                    <TextBlock
+                                        Grid.Row="2"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Z" />
+                                    <ctrls:NumericField
+                                        Grid.Row="2"
+                                        Grid.Column="1"
+                                        Decimals="3"
+                                        Step="0.1"
+                                        Value="{Binding Selected.Transform.PosZ, Mode=TwoWay}" />
+
+                                    <!--  spacer  -->
+                                    <Rectangle
+                                        Grid.Row="3"
+                                        Grid.ColumnSpan="2"
+                                        Height="1"
+                                        Fill="{DynamicResource Brush.Border}"
+                                        Opacity=".35" />
+
+                                    <TextBlock
+                                        Grid.Row="4"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Rotation X" />
+                                    <ctrls:NumericField
+                                        Grid.Row="4"
+                                        Grid.Column="1"
+                                        Decimals="2"
+                                        Max="360"
+                                        Min="0"
+                                        Step="1"
+                                        Suffix="°"
+                                        Wrap="True"
+                                        Value="{Binding Selected.Transform.RotX, Mode=TwoWay}" />
+
+                                    <TextBlock
+                                        Grid.Row="5"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Y" />
+                                    <ctrls:NumericField
+                                        Grid.Row="5"
+                                        Grid.Column="1"
+                                        Decimals="2"
+                                        Max="360"
+                                        Min="0"
+                                        Step="1"
+                                        Suffix="°"
+                                        Wrap="True"
+                                        Value="{Binding Selected.Transform.RotY, Mode=TwoWay}" />
+
+                                    <TextBlock
+                                        Grid.Row="6"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Z" />
+                                    <ctrls:NumericField
+                                        Grid.Row="6"
+                                        Grid.Column="1"
+                                        Decimals="2"
+                                        Max="360"
+                                        Min="0"
+                                        Step="1"
+                                        Suffix="°"
+                                        Wrap="True"
+                                        Value="{Binding Selected.Transform.RotZ, Mode=TwoWay}" />
+
+                                    <!--  spacer  -->
+                                    <Rectangle
+                                        Grid.Row="7"
+                                        Grid.ColumnSpan="2"
+                                        Height="1"
+                                        Fill="{DynamicResource Brush.Border}"
+                                        Opacity=".35" />
+
+                                    <TextBlock
+                                        Grid.Row="8"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Mode" />
+                                    <ComboBox
+                                        Grid.Row="8"
+                                        Grid.Column="1"
+                                        Height="32"
+                                        SelectedIndex="0">
+                                        <ComboBoxItem>XYZ Euler</ComboBoxItem>
+                                        <ComboBoxItem>XZY Euler</ComboBoxItem>
+                                        <ComboBoxItem>YXZ Euler</ComboBoxItem>
+                                        <ComboBoxItem>YZX Euler</ComboBoxItem>
+                                        <ComboBoxItem>ZXY Euler</ComboBoxItem>
+                                        <ComboBoxItem>ZYX Euler</ComboBoxItem>
+                                    </ComboBox>
+
+                                    <!--  spacer  -->
+                                    <Rectangle
+                                        Grid.Row="9"
+                                        Grid.ColumnSpan="2"
+                                        Height="1"
+                                        Fill="{DynamicResource Brush.Border}"
+                                        Opacity=".35" />
+
+                                    <!--  Scale  -->
+                                    <TextBlock
+                                        Grid.Row="10"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Scale X" />
+                                    <ctrls:NumericField
+                                        Grid.Row="10"
+                                        Grid.Column="1"
+                                        Decimals="3"
+                                        Min="0.001"
+                                        Step="0.05"
+                                        Value="{Binding Selected.Transform.SclX, Mode=TwoWay}" />
+
+                                    <TextBlock
+                                        Grid.Row="11"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Y" />
+                                    <ctrls:NumericField
+                                        Grid.Row="11"
+                                        Grid.Column="1"
+                                        Decimals="3"
+                                        Min="0.001"
+                                        Step="0.05"
+                                        Value="{Binding Selected.Transform.SclY, Mode=TwoWay}" />
+
+                                    <TextBlock
+                                        Grid.Row="12"
+                                        Grid.Column="0"
+                                        Margin="0,4,12,4"
+                                        VerticalAlignment="Center"
+                                        Text="Z" />
+                                    <ctrls:NumericField
+                                        Grid.Row="12"
+                                        Grid.Column="1"
+                                        Decimals="3"
+                                        Min="0.001"
+                                        Step="0.05"
+                                        Value="{Binding Selected.Transform.SclZ, Mode=TwoWay}" />
+                                </Grid>
+                            </Expander>
+
+                            <Border
+                                Padding="6"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <TextBlock Opacity="0.7" Text="Per object specified settings" />
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>

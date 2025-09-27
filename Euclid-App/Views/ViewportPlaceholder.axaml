@@ -1,0 +1,45 @@
+<UserControl
+    x:Class="EuclidApp.Views.ViewportPlaceholder"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Border Background="{DynamicResource Brush.ViewportBg}" CornerRadius="12" />
+        <Grid>
+            <Grid.Background>
+                <DrawingBrush
+                    SourceRect="0,0,32,32"
+                    Stretch="None"
+                    TileMode="Tile">
+                    <DrawingBrush.Drawing>
+                        <GeometryDrawing Brush="{DynamicResource Brush.ViewportTile}">
+                            <GeometryDrawing.Geometry>
+                                <GeometryGroup>
+                                    <LineGeometry StartPoint="0,0" EndPoint="32,0" />
+                                    <LineGeometry StartPoint="0,0" EndPoint="0,32" />
+                                </GeometryGroup>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                    </DrawingBrush.Drawing>
+                </DrawingBrush>
+            </Grid.Background>
+        </Grid>
+
+        <Canvas>
+            <Rectangle
+                Canvas.Left="{Binding ViewCenterX, Mode=OneWay, FallbackValue=300}"
+                Canvas.Top="{Binding ViewCenterY, Mode=OneWay, FallbackValue=220}"
+                Width="60"
+                Height="60"
+                Fill="#20FFFFFF"
+                RenderTransformOrigin="0.5,0.5"
+                Stroke="{DynamicResource Brush.BorderStrong}"
+                StrokeDashArray="2,2" />
+            <TextBlock
+                Margin="0,12,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Opacity="0.6"
+                Text="Viewport (placeholder)" />
+        </Canvas>
+    </Grid>
+</UserControl>

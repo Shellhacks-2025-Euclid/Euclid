@@ -1,0 +1,119 @@
+<UserControl
+    x:Class="EuclidApp.Controls.NumericField"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia">
+
+    <UserControl.Styles>
+
+        <Style Selector="Border#Root">
+            <Setter Property="Background" Value="#3C4046" />
+            <Setter Property="BorderBrush" Value="#50545B" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,4" />
+            <Setter Property="MinWidth" Value="112" />
+        </Style>
+
+        <Style Selector="Border#Root:pointerover">
+            <Setter Property="Background" Value="#474B52" />
+            <Setter Property="Cursor" Value="SizeWestEast" />
+        </Style>
+
+        <Style Selector="Border#Root:focus-within">
+            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+            <Setter Property="Background" Value="#31343A" />
+            <Setter Property="Cursor" Value="Ibeam" />
+        </Style>
+
+        <Style Selector="TextBox.nf-input">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="22,8,35,4" />
+            <Setter Property="FontSize" Value="13" />
+
+            <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Segoe UI" />
+            <Setter Property="Foreground" Value="#F0F0F0" />
+            <Setter Property="HorizontalContentAlignment" Value="Right" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="CaretBrush" Value="{DynamicResource Brush.Accent}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Accent}" />
+        </Style>
+
+        <Style Selector="TextBox.nf-input:pointerover,                          TextBox.nf-input:focus,                          TextBox.nf-input:focus-visible,                          TextBox.nf-input:focus-within,                          TextBox.nf-input:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="TextBox.nf-input /template/ Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+
+        <Style Selector="RepeatButton.nf-spin">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="20" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#D0D0D0" />
+        </Style>
+
+        <Style Selector="Border#Root:pointerover RepeatButton.nf-spin">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+
+        <Style Selector="RepeatButton.nf-spin:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+        </Style>
+
+    </UserControl.Styles>
+
+    <Border x:Name="Root">
+        <Grid>
+            <TextBox
+                x:Name="PART_Text"
+                Background="Transparent"
+                BorderThickness="0"
+                Classes="nf-input"
+                Text="" />
+
+            <RepeatButton
+                x:Name="SpinLeft"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Classes="nf-spin"
+                Delay="300"
+                Interval="50">
+                <iconPacks:PackIconMaterial
+                    Width="14"
+                    Height="14"
+                    Kind="ChevronLeft" />
+            </RepeatButton>
+
+            <RepeatButton
+                x:Name="SpinRight"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Classes="nf-spin"
+                Delay="300"
+                Interval="50">
+                <iconPacks:PackIconMaterial
+                    Width="14"
+                    Height="14"
+                    Kind="ChevronRight" />
+            </RepeatButton>
+        </Grid>
+    </Border>
+</UserControl>

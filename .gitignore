@@ -19,8 +19,6 @@ x86/
 *.user
 *.userosscache
 *.sln.docstates
-*.vcxproj*
-*.vcproj*
 *.pdb
 *.opendb
 *.log

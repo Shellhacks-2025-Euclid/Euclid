@@ -4,7 +4,7 @@ project "Euclid-App"
 	targetdir "Binaries/%{cfg.buildcfg}"
 	staticruntime "off"
 	
-files { "Source/**.h", "Source/**.cpp", "Source/**.cs", "Source/**.axaml", "Source/**.csproj", "Source/**.user"}
+files { "./**.h", "./**.cpp", "./**.cs", "./**.axaml", "./**.csproj", "./**.user"}
 
 includedirs { "Source", "../Euclid-Lib/Include", "../Euclid-Lib/Source" }
 
