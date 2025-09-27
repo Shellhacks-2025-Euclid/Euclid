@@ -4,7 +4,7 @@
 
 typedef void* EuclidHandle;
 
-// host's GL loader 
+// host's GL loader
 typedef void* (EUCLID_CALL* Euclid_GetProcAddr)(const char* name);
 
 typedef struct {

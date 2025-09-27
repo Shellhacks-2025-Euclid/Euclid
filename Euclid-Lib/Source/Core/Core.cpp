@@ -1,6 +1,21 @@
 #include "Core.hpp"
 
 namespace Euclid {
+
+namespace {
+    constexpr unsigned kModCtrl      = 1u << 1; // matches EUCLID_MOD_CTRL
+    constexpr unsigned kModSuper = 1u << 3; // Command on macOS
+    constexpr int      kMouseMiddle  = 2;       // matches EUCLID_MOUSE_MIDDLE
+}
+
+// ------ orbit gating state (DLL-internal) ------
+static bool     sCtrlDown = false;
+static bool     sMMBDown  = false;
+static bool     sFirstMoveWhileOrbit = true;
+static double   sLastX = 0.0, sLastY = 0.0;
+static unsigned sMods   = 0; // last known modifiers
+// ------------------------------------------------
+
 void Init() {
     
 }
@@ -107,7 +122,7 @@ void Core::Update(float dtSeconds) {
     mModel = glm::mat4(1.0f);
 }
 void Core::Render() {
-    glClearColor(0.1f, 0.1f, 0.4f, 1.0f);
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     mainShader.Use();
@@ -132,18 +147,19 @@ void Core::Render() {
     glUniformMatrix4fv(locProj,  1, GL_FALSE, &projection[0][0]);
 
     glBindVertexArray(mVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, 36 + 3);
     glBindVertexArray(0);
 }
 void Core::OnMouseMove(double x, double y) {
-    // Track deltas and orbit the camera
-    static bool   sFirst = true;
-    static double sLastX = 0.0;
-    static double sLastY = 0.0;
+    const bool orbiting = sCtrlDown || sMMBDown;
+    if (!orbiting) {
+        sFirstMoveWhileOrbit = true;
+        return;
+    }
 
-    if (sFirst) {
+    if (sFirstMoveWhileOrbit) {
         sLastX = x; sLastY = y;
-        sFirst = false;
+        sFirstMoveWhileOrbit = false;
         return;
     }
 
@@ -151,12 +167,15 @@ void Core::OnMouseMove(double x, double y) {
     float dy = static_cast<float>(y - sLastY);
     sLastX = x; sLastY = y;
 
-    // Feed deltas to orbit camera (invert Y inside camera for natural feel)
     mainCamera.ProcessMouseMovement(dx, dy, /*constrainPitch*/ true);
-    
 }
 void Core::OnMouseButton(int button, bool down, unsigned mods) {
-    (void)button; (void)down; (void)mods;
+    OnMods(mods); // refresh modifier cache
+
+    if (button == kMouseMiddle) {
+        sMMBDown = down;
+        if (down) sFirstMoveWhileOrbit = true; // avoid jump on press
+    }
 }
 void Core::OnScroll(double dx, double dy) {
     (void)dx;
@@ -164,7 +183,8 @@ void Core::OnScroll(double dx, double dy) {
     mainCamera.ProcessMouseScroll(static_cast<float>(dy));
 }
 void Core::OnMods(unsigned mods) {
-    
+    sMods = mods;
+    sCtrlDown = (sMods & kModCtrl) != 0 || (sMods & kModSuper) != 0;
 }
 }
 

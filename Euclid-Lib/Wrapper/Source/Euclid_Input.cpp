@@ -13,4 +13,7 @@ EUCLID_API void Euclid_OnScroll(EuclidHandle h, double dx, double dy)
 {
     if (auto* s=(EuclidState*)h) s->core.OnScroll(dx, dy);
 }
-
+EUCLID_API void Euclid_OnMods(EuclidHandle h, EuclidMods mods)
+{
+    if (auto* s = (EuclidState*)h) s->core.OnMods((unsigned)mods);
+}
