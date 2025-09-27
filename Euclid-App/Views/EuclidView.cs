@@ -1,4 +1,5 @@
-﻿using System;
+﻿// EuclidApp/Views/EuclidView.cs
+using System;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Input;
@@ -15,7 +16,8 @@ namespace EuclidApp.Views
         private double _lastT;
         private int _sentW, _sentH;
 
-        private bool _dragging;
+        private bool _dragging;             
+        private bool _orbitViaCtrlLeft;     
         private Point _lastPt;
         private double _virtX, _virtY;
         private const double DragSensitivity = 1.0;
@@ -23,8 +25,14 @@ namespace EuclidApp.Views
         public EuclidView()
         {
             Focusable = true;
-            IsHitTestVisible = true; // на всякий случай
+            IsHitTestVisible = true;
             SizeChanged += (_, __) => SendResizeIfNeeded();
+        }
+
+        public void UpdateMods(KeyModifiers km)
+        {
+            if (_euclid == IntPtr.Zero) return;
+            EuclidNative.Euclid_OnMods(_euclid, EuclidNative.ToEuclidMods(km));
         }
 
         // ---------- OpenGL ----------
@@ -83,25 +91,36 @@ namespace EuclidApp.Views
             }
         }
 
-        // ---------- ПУБЛИЧНЫЕ ПРОКСИ ДЛЯ ХОСТА ----------
         public void HostPointerPressed(PointerPressedEventArgs e)
         {
             if (_euclid == IntPtr.Zero) return;
 
             Focus();
+            UpdateMods(e.KeyModifiers); 
+
             var pt = e.GetPosition(this);
             _lastPt = pt;
 
             var kind = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
-            if (TryGetButton(kind, out var btn, out var isDown) && isDown)
-                EuclidNative.Euclid_OnMouseButton(_euclid, btn, 1, ToEuclidMods(e.KeyModifiers));
 
-            if (kind == PointerUpdateKind.RightButtonPressed)
+            // 1) «Чистый Blender»: MMB — жмём, шлём в DLL
+            if (TryGetButton(kind, out var btn, out var isDown) && isDown)
+            {
+                EuclidNative.Euclid_OnMouseButton(_euclid, btn, 1, EuclidNative.ToEuclidMods(e.KeyModifiers));
+                if (kind == PointerUpdateKind.MiddleButtonPressed)
+                {
+                    _dragging = true;
+                    _orbitViaCtrlLeft = false;
+                    _virtX = pt.X; _virtY = pt.Y;
+                    EuclidNative.Euclid_OnMouseMove(_euclid, _virtX, _virtY);
+                }
+            }
+
+            if ((e.KeyModifiers & KeyModifiers.Control) != 0 && kind == PointerUpdateKind.LeftButtonPressed)
             {
                 _dragging = true;
-                e.Pointer.Capture(null);
-                _virtX = pt.X;
-                _virtY = pt.Y;
+                _orbitViaCtrlLeft = true; 
+                _virtX = pt.X; _virtY = pt.Y;
                 EuclidNative.Euclid_OnMouseMove(_euclid, _virtX, _virtY);
             }
 
@@ -112,14 +131,25 @@ namespace EuclidApp.Views
         {
             if (_euclid == IntPtr.Zero) return;
 
+            UpdateMods(e.KeyModifiers);
+
             var kind = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
             if (TryGetButton(kind, out var btn, out var isDown))
             {
                 if (!isDown)
-                    EuclidNative.Euclid_OnMouseButton(_euclid, btn, 0, ToEuclidMods(e.KeyModifiers));
+                    EuclidNative.Euclid_OnMouseButton(_euclid, btn, 0, EuclidNative.ToEuclidMods(e.KeyModifiers));
 
-                if (kind == PointerUpdateKind.RightButtonReleased && _dragging)
+                if (kind == PointerUpdateKind.MiddleButtonReleased)
+                {
                     _dragging = false;
+                    _orbitViaCtrlLeft = false;
+                }
+            }
+
+            if (_orbitViaCtrlLeft && kind == PointerUpdateKind.LeftButtonReleased)
+            {
+                _dragging = false;
+                _orbitViaCtrlLeft = false;
             }
 
             e.Handled = true;
@@ -128,6 +158,8 @@ namespace EuclidApp.Views
         public void HostPointerMoved(PointerEventArgs e)
         {
             if (_euclid == IntPtr.Zero) return;
+
+            UpdateMods(e.KeyModifiers);
 
             var pt = e.GetPosition(this);
             if (_dragging)
@@ -152,11 +184,11 @@ namespace EuclidApp.Views
         public void HostPointerWheel(PointerWheelEventArgs e)
         {
             if (_euclid == IntPtr.Zero) return;
+            UpdateMods(e.KeyModifiers);
             EuclidNative.Euclid_OnScroll(_euclid, e.Delta.X, e.Delta.Y);
             e.Handled = true;
         }
 
-        // ---------- утилиты ----------
         private static bool TryGetButton(PointerUpdateKind kind, out EuclidMouseButton btn, out bool isDown)
         {
             btn = EuclidMouseButton.EUCLID_MOUSE_LEFT; isDown = false;
@@ -170,16 +202,6 @@ namespace EuclidApp.Views
                 case PointerUpdateKind.MiddleButtonReleased: btn = EuclidMouseButton.EUCLID_MOUSE_MIDDLE; isDown = false; return true;
                 default: return false;
             }
-        }
-
-        private static byte ToEuclidMods(KeyModifiers km)
-        {
-            byte m = 0;
-            if ((km & KeyModifiers.Shift) != 0) m |= EuclidMods.SHIFT;
-            if ((km & KeyModifiers.Control) != 0) m |= EuclidMods.CTRL;
-            if ((km & KeyModifiers.Alt) != 0) m |= EuclidMods.ALT;
-            if ((km & KeyModifiers.Meta) != 0) m |= EuclidMods.SUPER;
-            return m;
         }
     }
 }
