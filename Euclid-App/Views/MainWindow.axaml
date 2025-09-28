@@ -6,6 +6,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="clr-namespace:EuclidApp.Models"
+    xmlns:shapes="clr-namespace:EuclidApp.Models.Shapes"
     xmlns:views="clr-namespace:EuclidApp.Views"
     xmlns:vm="clr-namespace:EuclidApp.ViewModels"
     Title="Euclid"
@@ -20,6 +22,7 @@
 
     <DockPanel>
 
+        <!--  MENU  -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="New Scene" />
@@ -43,122 +46,162 @@
             <MenuItem Header="_Help" />
         </Menu>
 
+        <!--  TOOLBAR  -->
         <Border
+            Height="60"
             Margin="8,8,8,4"
             Padding="8"
             Classes="Toolbar"
             DockPanel.Dock="Top">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Button Classes="IconBtn" Command="{Binding UndoCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="Undo" />
-                        <ToolTip.Tip>Undo</ToolTip.Tip>
-                    </Button>
+                <DockPanel LastChildFill="False">
 
-                    <Button Classes="IconBtn" Command="{Binding RedoCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="Redo" />
-                        <ToolTip.Tip>Redo</ToolTip.Tip>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Image
+                            Width="24"
+                            Height="24"
+                            Margin="2,0,6,0"
+                            VerticalAlignment="Center"
+                            RenderOptions.BitmapInterpolationMode="HighQuality"
+                            Source="resm:EuclidApp.Assets.euclid-cube.png?assembly=Euclid-App"
+                            Stretch="Uniform" />
 
-                    <Separator Width="1" Classes="ToolSep" />
+                        <Button Classes="IconBtn" Command="{Binding UndoCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="Undo" />
+                            <ToolTip.Tip>Undo</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding SelectCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="CursorDefaultOutline" />
-                        <ToolTip.Tip>Cursor</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding RedoCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="Redo" />
+                            <ToolTip.Tip>Redo</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding TranslateCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="AxisArrow" />
-                        <ToolTip.Tip>Translate</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding SelectCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="CursorDefaultOutline" />
+                            <ToolTip.Tip>Cursor</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding RotateCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="Rotate3d" />
-                        <ToolTip.Tip>Rotate</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding TranslateCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="AxisArrow" />
+                            <ToolTip.Tip>Translate</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding ScaleCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="Resize" />
-                        <ToolTip.Tip>Resize</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding RotateCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="Rotate3d" />
+                            <ToolTip.Tip>Rotate</ToolTip.Tip>
+                        </Button>
 
-                    <Separator Width="1" Classes="ToolSep" />
+                        <Button Classes="IconBtn" Command="{Binding ScaleCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="Resize" />
+                            <ToolTip.Tip>Resize</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding AiSketchCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="MagicStaff" />
-                        <ToolTip.Tip>Trellis</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding SceneSettingsCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="ViewListOutline" />
+                            <ToolTip.Tip>Scene</ToolTip.Tip>
+                        </Button>
+                    </StackPanel>
 
-                    <Button Classes="IconBtn" Command="{Binding CameraCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="CameraOutline" />
-                        <ToolTip.Tip>Camera</ToolTip.Tip>
-                    </Button>
+                    <StackPanel
+                        DockPanel.Dock="Left"
+                        Orientation="Horizontal"
+                        Spacing="12">
+                        <Separator Width="1" Classes="ToolSep" />
 
-                    <Button Classes="IconBtn" Command="{Binding LightCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="LightbulbOutline" />
-                        <ToolTip.Tip>Light</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding AiSketchCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="RobotOutline" />
+                            <ToolTip.Tip>Trellis</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding RenderSettingsCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="CogPlayOutline" />
-                        <ToolTip.Tip>Render</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding CameraCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="CameraOutline" />
+                            <ToolTip.Tip>Camera</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding GridSettingsCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="Grid" />
-                        <ToolTip.Tip>Grid</ToolTip.Tip>
-                    </Button>
+                        <Button Classes="IconBtn" Command="{Binding LightCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="LightbulbOutline" />
+                            <ToolTip.Tip>Light</ToolTip.Tip>
+                        </Button>
 
-                    <Button Classes="IconBtn" Command="{Binding SceneSettingsCommand}">
-                        <iconPacks:PackIconMaterial
-                            Width="20"
-                            Height="20"
-                            Kind="ViewListOutline" />
-                        <ToolTip.Tip>Scene</ToolTip.Tip>
-                    </Button>
-                </StackPanel>
+                        <Button Classes="IconBtn" Command="{Binding RenderSettingsCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="CogPlayOutline" />
+                            <ToolTip.Tip>Render</ToolTip.Tip>
+                        </Button>
+
+                        <Button Classes="IconBtn" Command="{Binding GridSettingsCommand}">
+                            <iconPacks:PackIconMaterial
+                                Width="20"
+                                Height="20"
+                                Kind="Grid" />
+                            <ToolTip.Tip>Grid</ToolTip.Tip>
+                        </Button>
+                    </StackPanel>
+
+                    <Image
+                        Width="65"
+                        Height="65"
+                        Margin="0,5,8,0"
+                        DockPanel.Dock="Right"
+                        RenderOptions.BitmapInterpolationMode="None"
+                        Source="resm:EuclidApp.Assets.shellhacks.png?assembly=Euclid-App"
+                        Stretch="Uniform"
+                        StretchDirection="DownOnly"
+                        UseLayoutRounding="True" />
+
+                </DockPanel>
             </ScrollViewer>
         </Border>
 
-        <Grid Margin="8,4,8,8" ColumnDefinitions="*, Auto, 340">
+        <!--  CONTENT  -->
+        <Grid Margin="8,4,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="300" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition
+                    Width="340"
+                    MinWidth="260"
+                    MaxWidth="700" />
+            </Grid.ColumnDefinitions>
+
             <!--  Viewport  -->
             <views:ViewportPlaceholder
                 Grid.Column="0"
-                MinWidth="220"
+                MinWidth="300"
                 Margin="0" />
+
             <ctrls:TrellisPrompt x:Name="Trellis" IsVisible="{Binding IsPromptOpen}" />
 
             <GridSplitter
@@ -171,10 +214,13 @@
                 ResizeDirection="Columns"
                 ShowsPreview="True" />
 
-            <Grid
-                Grid.Column="2"
-                MinWidth="280"
-                RowDefinitions="*, Auto, *">
+            <Grid Grid.Column="2" MinWidth="260">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="120" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="160" />
+                </Grid.RowDefinitions>
+
                 <!--  SCENE  -->
                 <Border
                     Grid.Row="0"
@@ -191,7 +237,7 @@
                             ScrollViewer.VerticalScrollBarVisibility="Auto"
                             SelectedItem="{Binding Selected, Mode=TwoWay}">
                             <TreeView.DataTemplates>
-                                <TreeDataTemplate DataType="vm:SceneNode" ItemsSource="{Binding Children}">
+                                <TreeDataTemplate DataType="models:SceneNode" ItemsSource="{Binding Children}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <iconPacks:PackIconMaterial
                                             Width="18"
@@ -202,7 +248,6 @@
                                             Foreground="#C8CCD6"
                                             IsVisible="{Binding IsFolder}"
                                             Kind="FolderOutline" />
-
                                         <iconPacks:PackIconMaterial
                                             Width="18"
                                             Height="18"
@@ -211,7 +256,6 @@
                                             Foreground="#C8CCD6"
                                             IsVisible="{Binding IsLeaf}"
                                             Kind="CubeOutline" />
-
                                         <TextBlock Margin="0,0,0,0" Text="{Binding Name}" />
                                     </StackPanel>
                                 </TreeDataTemplate>
@@ -230,7 +274,6 @@
                     ResizeDirection="Rows"
                     ShowsPreview="True" />
 
-                <!--  SETTINGS  -->
                 <Border
                     Grid.Row="2"
                     MinHeight="160"
@@ -240,9 +283,14 @@
                             Classes="CardHeader"
                             DockPanel.Dock="Top"
                             Text="Settings" />
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,4,0,0" Spacing="10">
-                                <Expander Header="Transform" IsExpanded="True">
+
+                                <!--  Transform  -->
+                                <Expander
+                                    Header="Transform"
+                                    IsExpanded="True"
+                                    IsVisible="{Binding Selected.IsLeaf, TargetNullValue=False}">
                                     <Grid
                                         Margin="8,8,8,0"
                                         ColumnDefinitions="Auto,*"
@@ -414,13 +462,370 @@
                                     </Grid>
                                 </Expander>
 
-                                <Border
-                                    Padding="6"
-                                    BorderBrush="{DynamicResource Brush.Border}"
-                                    BorderThickness="1"
-                                    CornerRadius="8">
-                                    <TextBlock Opacity="0.7" Text="Per object specified settings" />
-                                </Border>
+                                <!--  PER-OBJECT SETTINGS  -->
+                                <Expander
+                                    Header="Per object settings"
+                                    IsExpanded="True"
+                                    IsVisible="{Binding Selected.IsLeaf, TargetNullValue=False}">
+                                    <ContentControl Content="{Binding SelectedSafe.Params}">
+                                        <ContentControl.DataTemplates>
+
+                                            <!--  Cube  -->
+                                            <DataTemplate DataType="shapes:CubeParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Edge" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Edge, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Sphere  -->
+                                            <DataTemplate DataType="shapes:SphereParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Radius" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Radius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Slices" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding Slices, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="2"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Stacks" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="2"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding Stacks, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Torus  -->
+                                            <DataTemplate DataType="shapes:TorusParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto,Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Major R" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding MajorRadius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Minor r" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding MinorRadius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="2"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Seg U" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="2"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding SegU, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="3"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Seg V" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="3"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding SegV, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Plane  -->
+                                            <DataTemplate DataType="shapes:PlaneParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Width" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Width, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Height" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Height, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Cone  -->
+                                            <DataTemplate DataType="shapes:ConeParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Radius" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Radius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Height" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Height, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="2"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Segments" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="2"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding Segments, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Cylinder  -->
+                                            <DataTemplate DataType="shapes:CylinderParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Radius" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Radius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Height" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Height, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="2"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Segments" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="2"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding Segments, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Prism  -->
+                                            <DataTemplate DataType="shapes:PrismParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Sides" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding Sides, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Radius" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Radius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="2"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Height" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="2"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Height, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Circle  -->
+                                            <DataTemplate DataType="shapes:CircleParamsVM">
+                                                <Grid
+                                                    Margin="8,8,8,0"
+                                                    ColumnDefinitions="Auto,*"
+                                                    RowDefinitions="Auto,Auto">
+                                                    <TextBlock
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Radius" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Decimals="3"
+                                                        Min="0.001"
+                                                        Step="0.05"
+                                                        Value="{Binding Radius, Mode=TwoWay}" />
+                                                    <TextBlock
+                                                        Grid.Row="1"
+                                                        Grid.Column="0"
+                                                        Margin="0,4,12,4"
+                                                        VerticalAlignment="Center"
+                                                        Text="Segments" />
+                                                    <ctrls:NumericField
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Decimals="0"
+                                                        Min="3"
+                                                        Step="1"
+                                                        Value="{Binding Segments, Mode=TwoWay}" />
+                                                </Grid>
+                                            </DataTemplate>
+
+                                            <!--  Imported/custom mesh  -->
+                                            <DataTemplate DataType="shapes:CustomParamsVM">
+                                                <TextBlock
+                                                    Margin="8"
+                                                    Opacity="0.7"
+                                                    Text="Imported mesh (no param sliders)." />
+                                            </DataTemplate>
+
+                                        </ContentControl.DataTemplates>
+                                    </ContentControl>
+                                </Expander>
                             </StackPanel>
                         </ScrollViewer>
                     </DockPanel>

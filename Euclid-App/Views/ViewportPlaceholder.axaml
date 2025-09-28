@@ -25,7 +25,26 @@
             </Grid.Background>
         </Grid>
 
+        <!--  input layer + GL control  -->
         <Grid x:Name="InputLayer" Background="Transparent">
+            <Grid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Command="{Binding AddCubeCommand}" Header="Add Cube" />
+                    <MenuItem Command="{Binding AddSphereCommand}" Header="Add Sphere" />
+                    <MenuItem Command="{Binding AddTorusCommand}" Header="Add Torus" />
+                    <MenuItem Command="{Binding AddPlaneCommand}" Header="Add Plane" />
+                    <MenuItem Command="{Binding AddConeCommand}" Header="Add Cone" />
+                    <MenuItem Command="{Binding AddCylinderCommand}" Header="Add Cylinder" />
+                    <MenuItem Command="{Binding AddPrismCommand}" Header="Add Prism" />
+                    <MenuItem Command="{Binding AddCircleCommand}" Header="Add Circle" />
+                    <Separator />
+                    <MenuItem Command="{Binding ImportObjCommand}" Header="Import OBJ..." />
+                    <Separator />
+                    <MenuItem Command="{Binding DeleteSelectedCommand}" Header="Delete Selected" />
+                    <MenuItem Command="{Binding ClearSceneCommand}" Header="Clear Scene" />
+                </ContextMenu>
+            </Grid.ContextMenu>
+
             <views:EuclidView
                 x:Name="GL"
                 HorizontalAlignment="Stretch"

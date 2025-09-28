@@ -78,7 +78,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Assets\euclid-cube.png" />
+    <None Remove="Assets\shellhacks.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="EuclidIconDesign.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\euclid-cube.png" />
+    <EmbeddedResource Include="Assets\shellhacks.png" />
   </ItemGroup>
 
 </Project>

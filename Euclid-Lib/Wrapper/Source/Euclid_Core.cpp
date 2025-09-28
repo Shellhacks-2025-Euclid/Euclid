@@ -80,9 +80,8 @@ static inline EuclidResult ok_or(EuclidState* s){ return s ? EUCLID_OK : EUCLID_
 
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_ClearScene(EuclidHandle h) {
-    if (auto* s=(EuclidState*)h) {
-        // s->ids.clear();  // if you keep a UI id set
-        // s->selected = 0; // optional local cache
+    if (auto* s = (EuclidState*)h) {
+        s->selected = 0;                    // <-- СБРОС
         return s->core.ClearScene();
     }
     return EUCLID_ERR_BAD_PARAM;
@@ -107,10 +106,8 @@ Euclid_DeleteObject(EuclidHandle h, EuclidObjectID id) {
     if (!h) return EUCLID_ERR_BAD_PARAM;
     auto* s = (EuclidState*)h;
     const EuclidResult r = s->core.DeleteObject(id);
-    if (r == EUCLID_OK) {
-        // sync wrapper caches if you keep any
-        // s->ids.erase(id);
-        // s->selected = (s->selected == id ? 0 : s->selected);
+    if (r == EUCLID_OK && s->selected == id) {
+        s->selected = 0;
     }
     return r;
 }
@@ -128,7 +125,10 @@ Euclid_SelectObject(EuclidHandle h, EuclidObjectID id) {
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_GetSelection(EuclidHandle h, EuclidObjectID* out_id) {
     if (!out_id) return EUCLID_ERR_BAD_PARAM;
-    if (auto* s=(EuclidState*)h) { *out_id = s->selected; return EUCLID_OK; }
+    if (auto* s = (EuclidState*)h) {
+        *out_id = s->selected;  
+        return EUCLID_OK;
+    }
     return EUCLID_ERR_BAD_PARAM;
 }
 
@@ -151,15 +151,16 @@ Euclid_GetGizmoMode(EuclidHandle h) {
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_HitTestSelect(EuclidHandle h, double x, double y, EuclidObjectID* out_id) {
     if (!out_id) return EUCLID_ERR_BAD_PARAM;
-    if (auto* s=(EuclidState*)h) {
-        auto id = s->core.RayPick(static_cast<float>(x), static_cast<float>(y));
+    if (auto* s = (EuclidState*)h) {
+        auto id = s->core.RayPick((float)x, (float)y);
         *out_id = id;
-        s->selected = id;
+        s->selected = id;         
         s->core.SetSelection(id);
         return EUCLID_OK;
     }
     return EUCLID_ERR_BAD_PARAM;
 }
+
 
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_GetObjectTransform(EuclidHandle h, EuclidObjectID id, EuclidTransform* out_tf) {
@@ -179,10 +180,12 @@ EUCLID_EXTERN_C EUCLID_API EuclidObjectID EUCLID_CALL Euclid_RayPick(EuclidHandl
     return s->core.RayPick(x, y);
 }
 
-EUCLID_EXTERN_C EUCLID_API void EUCLID_CALL Euclid_SetSelection(EuclidHandle h, EuclidObjectID id){
-    if (!h) return;
-    auto* s = (EuclidState*)h;
-    s->core.SetSelection(id);
+EUCLID_EXTERN_C EUCLID_API void EUCLID_CALL
+Euclid_SetSelection(EuclidHandle h, EuclidObjectID id) {
+    if (auto* s = (EuclidState*)h) {
+        s->selected = id;             
+        s->core.SetSelection(id);
+    }
 }
 
 EUCLID_EXTERN_C EUCLID_API int EUCLID_CALL Euclid_IsDraggingGizmo(EuclidHandle h){
