@@ -1,15 +1,16 @@
-﻿// ViewModels/MainViewModel.cs
-using Avalonia.Styling;
+﻿using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EuclidApp.Views;
 using System.Collections.ObjectModel;
-using System.Net.Sockets;
 
 namespace EuclidApp.ViewModels
 {
     public sealed partial class MainViewModel : ViewModelBase
     {
         public ObservableCollection<SceneNode> Scene { get; } = new();
+
+        [ObservableProperty] private bool isPromptOpen;
 
         [ObservableProperty]
         private SceneNode? selected;
@@ -34,12 +35,39 @@ namespace EuclidApp.ViewModels
         [RelayCommand] private void Translate() => IsSelectMode = false;
         [RelayCommand] private void Rotate() { }
         [RelayCommand] private void Scale() { }
-        [RelayCommand] private void AiSketch() { }
         [RelayCommand] private void Camera() { }
         [RelayCommand] private void Light() { }
         [RelayCommand] private void RenderSettings() { }
         [RelayCommand] private void GridSettings() { }
         [RelayCommand] private void SceneSettings() { }
+
+        [RelayCommand]
+        private void AiSketch()
+        {
+            IsPromptOpen = true;
+        }
+
+        [RelayCommand]
+        private async Task OpenRenderDialogAsync(Window? owner)
+        {
+            var win = new RenderImageWindow
+            {
+                Width = 1280,
+                Height = 800,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (owner is not null)
+                await win.ShowDialog(owner);
+            else
+                win.Show(); 
+        }
+
+        public void HandleTrellisSubmit(string prompt, AttachmentItem[]? images)
+        {
+            Console.WriteLine($"Trellis prompt: {prompt} | images: {images?.Length ?? 0}");
+            IsPromptOpen = false;
+        }
     }
 
     public sealed partial class SceneNode : ObservableObject
@@ -48,26 +76,39 @@ namespace EuclidApp.ViewModels
         public ObservableCollection<SceneNode> Children { get; } = new();
         public Transform Transform { get; } = new();
 
-        public SceneNode(string name) => Name = name;
+        public SceneNode(string name)
+        {
+            Name = name;
+            Children.CollectionChanged += (_, __) =>
+            {
+                OnPropertyChanged(nameof(HasChildren));
+                OnPropertyChanged(nameof(IsFolder));
+                OnPropertyChanged(nameof(IsLeaf));
+            };
+        }
+
         public SceneNode(string name, System.Collections.Generic.IEnumerable<SceneNode> children) : this(name)
         {
             foreach (var c in children) Children.Add(c);
         }
+
+        public bool HasChildren => Children.Count > 0;
+
+        public bool IsFolder => HasChildren;
+        public bool IsLeaf => !HasChildren;
     }
+
 
     public sealed partial class Transform : ObservableObject
     {
-        // Location
         [ObservableProperty] private double posX;
         [ObservableProperty] private double posY;
         [ObservableProperty] private double posZ;
 
-        // Rotation (в градусах)
-        [ObservableProperty] private double rotX; 
+        [ObservableProperty] private double rotX;
         [ObservableProperty] private double rotY;
-        [ObservableProperty] private double rotZ; 
+        [ObservableProperty] private double rotZ;
 
-        // Scale
         [ObservableProperty] private double sclX = 1.0;
         [ObservableProperty] private double sclY = 1.0;
         [ObservableProperty] private double sclZ = 1.0;
