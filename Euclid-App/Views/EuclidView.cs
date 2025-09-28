@@ -249,7 +249,6 @@ namespace EuclidApp.Views
             {
                 if (_euclid == IntPtr.Zero) { tcs.TrySetResult(false); return; }
 
-                // читаем выделение тоже в GL-контексте (безопаснее)
                 ulong sel = 0;
                 if (EuclidNative.Euclid_GetSelection(_euclid, out var id) == EuclidResult.EUCLID_OK)
                     sel = id;
@@ -570,7 +569,7 @@ namespace EuclidApp.Views
             if (_euclid == IntPtr.Zero) return;
 
             UpdateMods(e.KeyModifiers);
-            EuclidNative.Euclid_OnScroll(_euclid, e.Delta.X, e.Delta.Y);
+            EuclidNative.Euclid_OnScroll(_euclid, -e.Delta.X, -e.Delta.Y);
             e.Handled = true;
         }
 
