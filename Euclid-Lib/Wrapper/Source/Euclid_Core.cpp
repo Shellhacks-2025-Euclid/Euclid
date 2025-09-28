@@ -78,12 +78,12 @@ EUCLID_EXTERN_C EUCLID_API void EUCLID_CALL Euclid_Render(EuclidHandle h)
 // Shapes and gizmo calls
 static inline EuclidResult ok_or(EuclidState* s){ return s ? EUCLID_OK : EUCLID_ERR_BAD_PARAM; }
 
-EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL Euclid_ClearScene(EuclidHandle h) {
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_ClearScene(EuclidHandle h) {
     if (auto* s=(EuclidState*)h) {
-        s->objects.clear();
-        s->selected = 0;
-        s->core.RequestRebuildScene(); // tell core to drop GPU refs if needed
-        return EUCLID_OK;
+        // s->ids.clear();  // if you keep a UI id set
+        // s->selected = 0; // optional local cache
+        return s->core.ClearScene();
     }
     return EUCLID_ERR_BAD_PARAM;
 }
@@ -91,33 +91,34 @@ EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL Euclid_ClearScene(EuclidHand
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_CreateShape(EuclidHandle h, const EuclidCreateShapeDesc* desc, EuclidObjectID* out_id) {
     if (!h || !desc || !out_id) return EUCLID_ERR_BAD_PARAM;
-    auto* s=(EuclidState*)h;
-    auto id = s->nextID++;
+    auto* s = (EuclidState*)h;
+    auto id = s->nextID++; // if you assign ids in wrapper
 
     Euclid::Object* obj = s->core.CreateObject(desc->type, desc->params, desc->xform, id);
     if (!obj) return EUCLID_ERR_BAD_PARAM;
 
-    s->objects.emplace(id, std::unique_ptr<Euclid::Object>(obj));
+    // DO NOT store obj in s->objects as unique_ptr — Core owns it.
     *out_id = id;
     return EUCLID_OK;
 }
 
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_DeleteObject(EuclidHandle h, EuclidObjectID id) {
-    if (auto* s=(EuclidState*)h) {
-        s->core.DestroyObjectGPU(id);
-        s->objects.erase(id);
-        if (s->selected==id) s->selected=0;
-        return EUCLID_OK;
+    if (!h) return EUCLID_ERR_BAD_PARAM;
+    auto* s = (EuclidState*)h;
+    const EuclidResult r = s->core.DeleteObject(id);
+    if (r == EUCLID_OK) {
+        // sync wrapper caches if you keep any
+        // s->ids.erase(id);
+        // s->selected = (s->selected == id ? 0 : s->selected);
     }
-    return EUCLID_ERR_BAD_PARAM;
+    return r;
 }
 
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_SelectObject(EuclidHandle h, EuclidObjectID id) {
     if (auto* s=(EuclidState*)h) {
-        if (id!=0 && !s->objects.count(id)) return EUCLID_ERR_BAD_PARAM;
-        s->selected = id;
+        // optional: validate id by asking Core or your id set
         s->core.SetSelection(id);
         return EUCLID_OK;
     }

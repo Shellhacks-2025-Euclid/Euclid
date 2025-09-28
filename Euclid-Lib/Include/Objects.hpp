@@ -41,6 +41,7 @@ public:
     void    DestroyGPU(EuclidObjectID id);  // currently no per-object GPU, kept for future
     void    Clear();
     
+    bool Remove(EuclidObjectID id);
     
     const SharedMesh* GetCustomMesh(int customIndex) const {
         if (customIndex < 0 || customIndex >= (int)mCustom.size()) return nullptr;

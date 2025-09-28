@@ -57,6 +57,9 @@ public:
     EuclidResult CreateFromRawMesh(const float* pos, size_t vcount,
                                        const unsigned* idx, size_t icount,
                                        EuclidObjectID* outID, bool normalize);
+    
+    EuclidResult DeleteObject(EuclidObjectID id);
+    EuclidResult ClearScene();
 
     
 private:

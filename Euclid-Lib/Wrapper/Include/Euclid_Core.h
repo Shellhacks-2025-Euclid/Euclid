@@ -63,3 +63,6 @@ Euclid_SetObjectTransform(EuclidHandle h, EuclidObjectID id, const EuclidTransfo
 EUCLID_EXTERN_C EUCLID_API EuclidObjectID EUCLID_CALL Euclid_RayPick(EuclidHandle h, float x, float y); // returns 0 if none
 EUCLID_EXTERN_C EUCLID_API void           EUCLID_CALL Euclid_SetSelection(EuclidHandle h, EuclidObjectID id);
 EUCLID_EXTERN_C EUCLID_API int            EUCLID_CALL Euclid_IsDraggingGizmo(EuclidHandle h);           // 0/1
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult Euclid_DeleteObject(EuclidHandle h, EuclidObjectID id);
+

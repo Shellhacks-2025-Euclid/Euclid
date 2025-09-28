@@ -495,7 +495,12 @@ void Core::DrawObject(const Object& o, const glm::mat4& view, const glm::mat4& p
 }
 
 void Core::DrawScene(const glm::mat4& view, const glm::mat4& proj) {
-    for (auto& kv : mObjs.All()) DrawObject(*kv.second, view, proj);
+    // copy ids to avoid iterator invalidation if something deletes during draw
+    std::vector<EuclidObjectID> ids; ids.reserve(mObjs.All().size());
+    for (auto& kv : mObjs.All()) ids.push_back(kv.first);
+    for (auto id : ids) {
+        if (const Object* o = mObjs.Get(id)) DrawObject(*o, view, proj);
+    }
 }
 
 void Core::DrawGizmoForSelection(const glm::mat4& viewProj) {
@@ -867,5 +872,26 @@ EuclidResult Core::CreateFromRawMesh(const float* pos, size_t vcount,
                                      const unsigned* idx, size_t icount,
                                      EuclidObjectID* outID, bool normalize) {
     return mObjs.CreateFromRawMesh(pos, vcount, idx, icount, outID, normalize);
+}
+
+EuclidResult Core::DeleteObject(EuclidObjectID id) {
+    if (!id) return EUCLID_ERR_BAD_PARAM;
+
+    // stop drag if the deleted object is being dragged
+    if (mDraggingGizmo && mDragObj == id) {
+        EndGizmoDrag();
+    }
+
+    // Remove from store
+    if (!mObjs.Get(id)) return EUCLID_ERR_BAD_PARAM;
+    mObjs.SetSelection(0);
+    // add this in ObjectStore (below): mObjs.Remove(id);
+    const bool ok = mObjs.Remove(id);
+    return ok ? EUCLID_OK : EUCLID_ERR_BAD_PARAM;
+}
+EuclidResult Core::ClearScene() {
+    EndGizmoDrag();
+    mObjs.Clear();
+    return EUCLID_OK;
 }
 }

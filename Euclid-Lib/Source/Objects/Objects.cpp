@@ -691,6 +691,10 @@ EuclidResult ObjectStore::CreateFromRawMesh(const float* positions, size_t verte
     return EUCLID_OK;
 }
 
-
+bool ObjectStore::Remove(EuclidObjectID id) {
+    // (Optional) if you want to auto-clear selection when it points at this id:
+    if (mSelected == id) mSelected = 0;
+    return mObjects.erase(id) > 0;
+}
 
 } // namespace Euclid
