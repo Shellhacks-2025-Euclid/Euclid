@@ -1,79 +1,80 @@
 "use client";
 
 import React from "react";
-import { type CarouselApi } from "@/components/ui/carousel";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import {type CarouselApi} from "@/components/ui/carousel";
+import {Carousel, CarouselContent, CarouselItem} from "@/components/ui/carousel";
+import {Button} from "@/components/ui/button";
+import {ArrowLeftIcon, ArrowRightIcon} from "lucide-react";
 import Image from "next/image";
 
 const showcaseData = [
-  { imageUrl: "/examples/model_1.png", title: "Showcase 1" },
-  { imageUrl: "/examples/model_2.png", title: "Showcase 2" },
-  { imageUrl: "/examples/model_3.png", title: "Showcase 3" },
-  { imageUrl: "/examples/model_4.png", title: "Showcase 4" },
-  { imageUrl: "/examples/model_5.png", title: "Showcase 5" },
+    {imageUrl: "/examples/model_6.png", title: "Showcase 6"},
+    {imageUrl: "/examples/model_5.png", title: "Showcase 5"},
+    {imageUrl: "/examples/model_4.png", title: "Showcase 4"},
+    {imageUrl: "/examples/model_3.png", title: "Showcase 3"},
+    {imageUrl: "/examples/model_2.png", title: "Showcase 2"},
+    {imageUrl: "/examples/model_1.png", title: "Showcase 1"},
 ];
 
 export default function BlockShowcases() {
-  const [api, setApi] = React.useState<CarouselApi>();
-  return (
-    <section id={"showcases"} className="flex gap-4 flex-col py-[150px]">
-      <div className="w-full flex flex-col gap-2 mb-8">
-        <h2 className="scroll-m-20 text-2xl md:text-3xl font-medium tracking-tight text-balance">
-          What you can create with Euclid
-        </h2>
-        <p className="text-muted-foreground text-sm md:text-base">
-          {"However, Euclid's true potential lies in your imagination."}
-        </p>
-      </div>
+    const [api, setApi] = React.useState<CarouselApi>();
+    return (
+        <section id={"showcases"} className="flex gap-4 flex-col py-[150px]">
+            <div className="w-full flex flex-col gap-2 mb-8">
+                <h2 className="scroll-m-20 text-2xl md:text-3xl font-medium tracking-tight text-balance">
+                    What you can create with Euclid
+                </h2>
+                <p className="text-muted-foreground text-sm md:text-base">
+                    {"However, Euclid's true potential lies in your imagination."}
+                </p>
+            </div>
 
-      <Carousel
-        opts={{
-          align: "start",
-          dragFree: true,
-          containScroll: "trimSnaps",
-          loop: true,
-        }}
-        className="w-full"
-        setApi={setApi}
-      >
-        <CarouselContent>
-          {showcaseData.map((v) => (
-            <CarouselItem key={v.title} className="md:basis-1/2 lg:basis-1/3 flex items-center">
-              <Image
-                src={v.imageUrl}
-                alt={v.title}
-                width={300}
-                height={300}
-                className="rounded-md object-contain w-full h-fit"
-                unoptimized={true}
-              />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-      </Carousel>
+            <Carousel
+                opts={{
+                    align: "start",
+                    dragFree: true,
+                    containScroll: "trimSnaps",
+                    loop: true,
+                }}
+                className="w-full"
+                setApi={setApi}
+            >
+                <CarouselContent>
+                    {showcaseData.map((v) => (
+                        <CarouselItem key={v.title} className="md:basis-1/2 lg:basis-1/3 flex items-center">
+                            <Image
+                                src={v.imageUrl}
+                                alt={v.title}
+                                width={300}
+                                height={300}
+                                className="rounded-md object-contain w-full h-fit"
+                                unoptimized={true}
+                            />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
 
-      <div className="w-full">
-        <div className="w-full flex justify-center gap-2">
-          <Button
-            variant={"secondary"}
-            className="w-1/2 md:w-[120px] cursor-pointer flex justify-between"
-            onClick={() => api?.scrollPrev()}
-          >
-            <ArrowLeftIcon />
-            Previous
-          </Button>
-          <Button
-            variant={"secondary"}
-            className="w-1/2 md:w-[120px] cursor-pointer flex justify-between"
-            onClick={() => api?.scrollNext()}
-          >
-            Next
-            <ArrowRightIcon />
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
+            <div className="w-full">
+                <div className="w-full flex justify-center gap-2">
+                    <Button
+                        variant={"secondary"}
+                        className="w-1/2 md:w-[120px] cursor-pointer flex justify-between"
+                        onClick={() => api?.scrollPrev()}
+                    >
+                        <ArrowLeftIcon/>
+                        Previous
+                    </Button>
+                    <Button
+                        variant={"secondary"}
+                        className="w-1/2 md:w-[120px] cursor-pointer flex justify-between"
+                        onClick={() => api?.scrollNext()}
+                    >
+                        Next
+                        <ArrowRightIcon/>
+                    </Button>
+                </div>
+            </div>
+        </section>
+    );
 }
