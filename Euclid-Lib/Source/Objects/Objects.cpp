@@ -461,14 +461,14 @@ void ObjectStore::ReleasePrimitives() {
 Object* ObjectStore::Create(EuclidShapeType t, const void* params,
                             const EuclidTransform& xform, EuclidObjectID id) {
     auto obj = std::make_unique<Object>();
-    obj->id = id;
+    // auto-generate a usable id when caller passes 0
+    if (id == 0) id = NewID();
+
+    obj->id   = id;
     obj->type = t;
-    obj->tf = xform;
+    obj->tf   = xform;
 
-    // Default non-zero scale
     for (int i=0;i<3;++i) if (obj->tf.scale[i] == 0.0f) obj->tf.scale[i] = 1.0f;
-
-    // NEW: apply per-shape params to transform scale
     ApplyParamsToScale(t, params, obj->tf);
 
     auto* raw = obj.get();
@@ -483,6 +483,7 @@ void ObjectStore::DestroyGPU(EuclidObjectID /*id*/) {
 void ObjectStore::Clear() {
     mObjects.clear();
     mSelected = 0;
+    mNextID   = 1; // (optional) start fresh so ids stay small between scenes
 }
 
 // -------- Access --------

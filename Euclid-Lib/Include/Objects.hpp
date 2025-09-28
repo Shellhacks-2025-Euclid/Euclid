@@ -85,7 +85,10 @@ public:
 private:
     std::unordered_map<EuclidObjectID, std::unique_ptr<Object>> mObjects;
     EuclidObjectID mSelected = 0;
-
+    
+    EuclidObjectID mNextID = 1;          // 0 is “no selection” sentinel
+    EuclidObjectID NewID() { return mNextID++; }
+    
     // Primitives
     SharedMesh mCube, mPlane, mSphere, mTorus,
                mCone, mCylinder, mPrism, mCircle;
