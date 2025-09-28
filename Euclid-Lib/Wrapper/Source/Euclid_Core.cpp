@@ -189,3 +189,28 @@ EUCLID_EXTERN_C EUCLID_API int EUCLID_CALL Euclid_IsDraggingGizmo(EuclidHandle h
     auto* s = (EuclidState*)h;
     return s->core.IsDraggingGizmo() ? 1 : 0;
 }
+
+// ---- Custom mesh import (OBJ / raw) ----
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_LoadOBJ(EuclidHandle h, const char* path, EuclidObjectID* out_id, int normalize)
+{
+    if (!h || !path || !out_id) return EUCLID_ERR_BAD_PARAM;
+    auto* s = (EuclidState*)h;
+    // Core must provide these methods; see note below.
+    return s->core.LoadOBJ(path, out_id, normalize != 0);
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_CreateFromRawMesh(EuclidHandle h,
+                         const float* positions, size_t vertexCount,
+                         const unsigned* indices, size_t indexCount,
+                         EuclidObjectID* out_id, int normalize)
+{
+    if (!h || !positions || vertexCount==0 || !indices || indexCount<3 || !out_id)
+        return EUCLID_ERR_BAD_PARAM;
+
+    auto* s = (EuclidState*)h;
+    return s->core.CreateFromRawMesh(positions, vertexCount,
+                                     indices, indexCount,
+                                     out_id, normalize != 0);
+}

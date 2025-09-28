@@ -53,6 +53,10 @@ public:
     void SetGizmoMode(EuclidGizmoMode m) { mGizmoMode = m; }
     void RequestRebuildScene();
     bool IsDraggingGizmo() const { return mDraggingGizmo; }
+    EuclidResult LoadOBJ(const char* path, EuclidObjectID* outID, bool normalize);
+    EuclidResult CreateFromRawMesh(const float* pos, size_t vcount,
+                                       const unsigned* idx, size_t icount,
+                                       EuclidObjectID* outID, bool normalize);
 
     
 private:

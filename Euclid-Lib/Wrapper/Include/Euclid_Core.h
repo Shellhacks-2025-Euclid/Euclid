@@ -1,4 +1,6 @@
 #pragma once
+
+#include <stddef.h>
 #include "Euclid_Export.h"
 #include "Euclid_Types.h"
 
@@ -21,6 +23,16 @@ EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL Euclid_ClearScene(EuclidHand
 
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_CreateShape(EuclidHandle h, const EuclidCreateShapeDesc* desc, EuclidObjectID* out_id);
+
+// ---- Custom mesh import ----
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_LoadOBJ(EuclidHandle h, const char* path, EuclidObjectID* out_id, int normalize);
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_CreateFromRawMesh(EuclidHandle h,
+                         const float* positions, size_t vertexCount,
+                         const unsigned* indices, size_t indexCount,
+                         EuclidObjectID* out_id, int normalize);
 
 EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
 Euclid_DeleteObject(EuclidHandle h, EuclidObjectID id);

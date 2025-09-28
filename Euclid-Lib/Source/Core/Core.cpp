@@ -476,14 +476,22 @@ void Core::DrawObject(const Object& o, const glm::mat4& view, const glm::mat4& p
     glm::mat4 model = o.Model();
     mainShader.Use();
     glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(),"uModel"),1,GL_FALSE,&model[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(),"uView"),1,GL_FALSE,&view[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(),"uProjection"),1,GL_FALSE,&proj[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(),"uView"),1,GL_FALSE,&view[0][0]);       glUniformMatrix4fv(glGetUniformLocation(mainShader.GetID(),"uProjection"),1,GL_FALSE,&proj[0][0]);
 
-    const SharedMesh& mesh = mObjs.MeshFor(o.type);
-    glBindVertexArray(mesh.vao);
-    if (mesh.indexed) glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);
-    else              glDrawArrays  (GL_TRIANGLES, 0, mesh.indexCount);
+    if (o.type == EUCLID_SHAPE_CUSTOM) {
+        const SharedMesh* cm = mObjs.GetCustomMesh(o.customIndex);
+        if (!cm) return;
+        glBindVertexArray(cm->vao);
+        if (cm->indexed) glDrawElements(GL_TRIANGLES, cm->indexCount, GL_UNSIGNED_INT, 0);
+        else              glDrawArrays  (GL_TRIANGLES, 0,            cm->indexCount);
+    } else {
+        const SharedMesh& mesh = mObjs.MeshFor(o.type);
+        glBindVertexArray(mesh.vao);
+        if (mesh.indexed) glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);
+        else              glDrawArrays  (GL_TRIANGLES, 0,            mesh.indexCount);
+    }
     glBindVertexArray(0);
+    
 }
 
 void Core::DrawScene(const glm::mat4& view, const glm::mat4& proj) {
@@ -852,5 +860,12 @@ void Core::UpdateGizmoGeometry(const glm::vec3& origin, const glm::mat3& B, floa
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
-
+EuclidResult Core::LoadOBJ(const char* path, EuclidObjectID* outID, bool normalize) {
+    return mObjs.LoadOBJ(path, outID, normalize);
+}
+EuclidResult Core::CreateFromRawMesh(const float* pos, size_t vcount,
+                                     const unsigned* idx, size_t icount,
+                                     EuclidObjectID* outID, bool normalize) {
+    return mObjs.CreateFromRawMesh(pos, vcount, idx, icount, outID, normalize);
+}
 }

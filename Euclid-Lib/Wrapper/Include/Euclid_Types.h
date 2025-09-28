@@ -55,7 +55,8 @@ typedef enum {
     EUCLID_SHAPE_CONE     = 4,
     EUCLID_SHAPE_CYLINDER = 5,
     EUCLID_SHAPE_PRISM    = 6,  // regular n-gon prism (n>=3)
-    EUCLID_SHAPE_CIRCLE   = 7   // filled disc in XZ
+    EUCLID_SHAPE_CIRCLE   = 7,
+    EUCLID_SHAPE_CUSTOM   = 8
 } EuclidShapeType;
 
 typedef enum {

@@ -75,6 +75,8 @@ static void ApplyParamsToScale(EuclidShapeType t, const void* params, EuclidTran
     }
 }
 
+
+
 namespace {
     struct V { float p[3]; float c[3]; };
     constexpr float PI = 3.14159265358979323846f;
@@ -359,6 +361,76 @@ namespace {
     }
 } // anon
 
+// === Helpers (put next to UploadMesh in the same anonymous namespace) ===
+static void ComputeAABB(const std::vector<V>& verts, glm::vec3& bmin, glm::vec3& bmax) {
+    glm::vec3 mn( 1e9f), mx(-1e9f);
+    for (auto& v : verts) {
+        mn.x = std::min(mn.x, v.p[0]); mn.y = std::min(mn.y, v.p[1]); mn.z = std::min(mn.z, v.p[2]);
+        mx.x = std::max(mx.x, v.p[0]); mx.y = std::max(mx.y, v.p[1]); mx.z = std::max(mx.z, v.p[2]);
+    }
+    bmin = mn; bmax = mx;
+}
+
+static void NormalizeToUnit(std::vector<V>& verts) {
+    glm::vec3 mn, mx; ComputeAABB(verts, mn, mx);
+    glm::vec3 size = mx - mn;
+    float maxDim = std::max(size.x, std::max(size.y, size.z));
+    if (maxDim <= 0.f) return;
+    glm::vec3 center = 0.5f * (mn + mx);
+    float s = 1.0f / maxDim;
+    for (auto& v : verts) {
+        v.p[0] = (v.p[0] - center.x) * s;
+        v.p[1] = (v.p[1] - center.y) * s;
+        v.p[2] = (v.p[2] - center.z) * s;
+    }
+}
+
+// tiny OBJ reader: v, vn, f (triangulates fan)
+struct Idx { int v=-1, vn=-1; };
+static bool ParseOBJ(const char* path, std::vector<V>& outVerts, std::vector<unsigned>& outIdx) {
+    FILE* fp = fopen(path, "rb");
+    if (!fp) return false;
+
+    std::vector<glm::vec3> pos, nrm;
+    std::vector<Idx> face;
+    char line[1024];
+
+    auto emitTri = [&](const Idx& a, const Idx& b, const Idx& c){
+        auto push = [&](const Idx& id)->unsigned{
+            glm::vec3 P(0), N(0);
+            if (id.v  >=0 && id.v  < (int)pos.size()) P = pos[id.v];
+            if (id.vn >=0 && id.vn < (int)nrm.size()) N = nrm[id.vn];
+            glm::vec3 C = (glm::length(N)>0) ? 0.5f*(glm::normalize(N)+glm::vec3(1)) : glm::vec3(0.9f);
+            V v; v.p[0]=P.x; v.p[1]=P.y; v.p[2]=P.z; v.c[0]=C.x; v.c[1]=C.y; v.c[2]=C.z;
+            outVerts.push_back(v); return (unsigned)outVerts.size()-1;
+        };
+        unsigned ia=push(a), ib=push(b), ic=push(c);
+        outIdx.push_back(ia); outIdx.push_back(ib); outIdx.push_back(ic);
+    };
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (line[0]=='v' && line[1]==' ') {
+            glm::vec3 p; if (sscanf(line,"v %f %f %f",&p.x,&p.y,&p.z)==3) pos.push_back(p);
+        } else if (line[0]=='v' && line[1]=='n') {
+            glm::vec3 n; if (sscanf(line,"vn %f %f %f",&n.x,&n.y,&n.z)==3) nrm.push_back(n);
+        } else if (line[0]=='f' && line[1]==' ') {
+            face.clear(); char* s=line+2;
+            while (*s) {
+                while (*s==' ') ++s; if (*s=='\n'||*s=='\0') break;
+                int vi=-1, ti=-1, ni=-1; char* st=s;
+                vi=(int)strtol(s,&s,10);
+                if (*s=='/') { ++s; if (*s=='/') { ++s; ni=(int)strtol(s,&s,10);} else { (void)strtol(s,&s,10); if (*s=='/') { ++s; ni=(int)strtol(s,&s,10);} } }
+                if (s==st) break;
+                Idx id; if (vi>0) id.v=vi-1; if (ni>0) id.vn=ni-1; face.push_back(id);
+                while (*s==' ') ++s;
+            }
+            if (face.size()>=3) for (size_t i=1;i+1<face.size();++i) emitTri(face[0], face[i], face[i+1]);
+        }
+    }
+    fclose(fp);
+    return !outVerts.empty();
+}
+
 // -------- ObjectStore: primitives --------
 void ObjectStore::InitPrimitives() {
     // Cube & Plane (non-indexed to match your current shader path)
@@ -457,6 +529,7 @@ const SharedMesh& ObjectStore::MeshFor(EuclidShapeType t) const {
         case EUCLID_SHAPE_CYLINDER: return mCylinder;
         case EUCLID_SHAPE_PRISM:    return mPrism;
         case EUCLID_SHAPE_CIRCLE:   return mCircle;
+        case EUCLID_SHAPE_CUSTOM:
         default:                    return mCube;
     }
 }
@@ -488,7 +561,8 @@ bool ObjectStore::IntersectAABB(const Ray& ray, const glm::vec3& bmin, const glm
 // -------- RayPick --------
 EuclidObjectID ObjectStore::RayPick(float screenX, float screenY,
                                     const glm::mat4& invViewProj,
-                                    int viewportW, int viewportH) const {
+                                    int viewportW, int viewportH) const
+{
     if (viewportW <= 0 || viewportH <= 0) return 0;
     Ray ray = ScreenRay(screenX, screenY, viewportW, viewportH, invViewProj);
 
@@ -497,10 +571,19 @@ EuclidObjectID ObjectStore::RayPick(float screenX, float screenY,
 
     for (auto& kv : mObjects) {
         const Object& o = *kv.second;
-        glm::vec3 bminL, bmaxL; ShapeLocalBounds(o.type, bminL, bmaxL);
+
+        // 👇 use custom bounds if this is an imported mesh
+        glm::vec3 bminL, bmaxL;
+        if (o.type == EUCLID_SHAPE_CUSTOM) {
+            bminL = o.localMin;
+            bmaxL = o.localMax;
+        } else {
+            ShapeLocalBounds(o.type, bminL, bmaxL);
+        }
+
         glm::mat4 M = o.Model();
 
-        // Transform local AABB to world AABB via 8 corners
+        // local AABB -> world AABB via 8 corners (as you already do)
         glm::vec3 corners[8] = {
             {bminL.x,bminL.y,bminL.z},{bmaxL.x,bminL.y,bminL.z},{bminL.x,bmaxL.y,bminL.z},{bmaxL.x,bmaxL.y,bminL.z},
             {bminL.x,bminL.y,bmaxL.z},{bmaxL.x,bminL.y,bmaxL.z},{bminL.x,bmaxL.y,bmaxL.z},{bmaxL.x,bmaxL.y,bmaxL.z}
@@ -517,5 +600,96 @@ EuclidObjectID ObjectStore::RayPick(float screenX, float screenY,
     }
     return best;
 }
+
+// === ObjectStore methods ===
+EuclidResult ObjectStore::LoadOBJ(const char* path, EuclidObjectID* outID, bool normalize)
+{
+    if (!path || !outID) return EUCLID_ERR_BAD_PARAM;
+
+    std::vector<V> verts;
+    std::vector<unsigned> idx;
+    if (!ParseOBJ(path, verts, idx))
+        return EUCLID_ERR_BAD_PARAM;
+
+    if (normalize) NormalizeToUnit(verts);
+
+    glm::vec3 mn, mx;
+    ComputeAABB(verts, mn, mx);
+
+    // Upload GPU mesh
+    CustomEntry ce;
+    UploadMesh(ce.mesh, verts, idx);
+    ce.localMin = mn;
+    ce.localMax = mx;
+
+    const int customIndex = (int)mCustom.size();
+    mCustom.push_back(std::move(ce));
+
+    // Create scene object and hook it up to the custom mesh
+    EuclidTransform xform{};
+    xform.scale[0] = xform.scale[1] = xform.scale[2] = 1.f;
+
+    Object* o = Create(EUCLID_SHAPE_CUSTOM, nullptr, xform, 0);
+    if (!o) return EUCLID_ERR_INIT;            // <-- was EUCLID_ERR_UNKNOWN
+
+    o->customIndex = customIndex;
+    o->localMin    = mn;
+    o->localMax    = mx;
+
+    *outID = o->id;
+    return EUCLID_OK;
+}
+
+EuclidResult ObjectStore::CreateFromRawMesh(const float* positions, size_t vertexCount,
+                                            const unsigned* indices, size_t indexCount,
+                                            EuclidObjectID* outID, bool normalize)
+{
+    if (!positions || vertexCount == 0 || !indices || indexCount < 3 || !outID)
+        return EUCLID_ERR_BAD_PARAM;
+
+    // Build vertex array
+    std::vector<V> verts;
+    verts.reserve(vertexCount);
+    for (size_t i = 0; i < vertexCount; ++i) {
+        V v{};
+        v.p[0] = positions[3*i+0];
+        v.p[1] = positions[3*i+1];
+        v.p[2] = positions[3*i+2];
+        v.c[0] = v.c[1] = v.c[2] = 0.9f; // default gray
+        verts.push_back(v);
+    }
+
+    std::vector<unsigned> idx(indices, indices + indexCount);
+
+    if (normalize) NormalizeToUnit(verts);
+
+    glm::vec3 mn, mx;
+    ComputeAABB(verts, mn, mx);
+
+    // Upload GPU mesh
+    CustomEntry ce;
+    UploadMesh(ce.mesh, verts, idx);
+    ce.localMin = mn;
+    ce.localMax = mx;
+
+    const int customIndex = (int)mCustom.size();
+    mCustom.push_back(std::move(ce));
+
+    // Create scene object
+    EuclidTransform xform{};
+    xform.scale[0] = xform.scale[1] = xform.scale[2] = 1.f;
+
+    Object* o = Create(EUCLID_SHAPE_CUSTOM, nullptr, xform, 0);
+    if (!o) return EUCLID_ERR_INIT;            // <-- was EUCLID_ERR_UNKNOWN
+
+    o->customIndex = customIndex;
+    o->localMin    = mn;
+    o->localMax    = mx;
+
+    *outID = o->id;
+    return EUCLID_OK;
+}
+
+
 
 } // namespace Euclid

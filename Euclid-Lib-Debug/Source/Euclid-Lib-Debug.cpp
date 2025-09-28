@@ -10,7 +10,13 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include <unordered_map>
+#include <string>
+#include <cstring> // std::strlen, std::strncpy
+#include <cctype>  // std::tolower
 
+// =======================
+// Euclid host glue
+// =======================
 static EuclidHandle H = nullptr;
 static void* Loader(const char* n){ return (void*)glfwGetProcAddress(n); }
 static uint8_t Mods(int m) {
@@ -21,8 +27,6 @@ static uint8_t Mods(int m) {
     if(m&GLFW_MOD_SUPER)   r|=EUCLID_MOD_SUPER;
     return r;
 }
-
-
 
 // Convert cursor from window coords to framebuffer pixel coords (handles Retina/HiDPI)
 static void GetCursorPosPixels(GLFWwindow* w, double* outXpx, double* outYpx) {
@@ -109,10 +113,9 @@ static void ApplyParamsToSelectedTransform(EuclidHandle H, EuclidObjectID id, co
     Euclid_SetObjectTransform(H, id, &t);
 }
 
-
 static std::unordered_map<EuclidObjectID, ParamStore> gParamsById;
 static ParamStore gDefaults;                   // spawn defaults
-static EuclidObjectID gLocalSelected = 0;      // <-- local selection cache
+static EuclidObjectID gLocalSelected = 0;      // local selection cache
 
 static void RememberParams(EuclidObjectID id, const ParamStore& ps) {
     gParamsById[id] = ps;
@@ -120,6 +123,38 @@ static void RememberParams(EuclidObjectID id, const ParamStore& ps) {
 static void SetSelectionBoth(EuclidObjectID id) {
     Euclid_SetSelection(H, id);    // engine
     gLocalSelected = id;           // local cache
+}
+
+// =======================
+// OBJ import helpers/UI
+// =======================
+static char gObjPath[512] = "";
+static bool gNormalizeOBJ = true;
+
+static bool EndsWithNoCase(const char* s, const char* suffix) {
+    if (!s || !suffix) return false;
+    size_t ls = std::strlen(s), lt = std::strlen(suffix);
+    if (lt > ls) return false;
+    for (size_t i=0;i<lt;++i){
+        char a = (char)std::tolower((unsigned char)s[ls-1-i]);
+        char b = (char)std::tolower((unsigned char)suffix[lt-1-i]);
+        if (a!=b) return false;
+    }
+    return true;
+}
+
+static void DoImportOBJ(const char* path, bool normalize) {
+    if (!path || !*path) return;
+    if (!EndsWithNoCase(path, ".obj")) return;  // optional guard
+
+    EuclidObjectID id = 0;
+    if (Euclid_LoadOBJ(H, path, &id, normalize ? 1 : 0) == EUCLID_OK && id) {
+        SetSelectionBoth(id);
+        // Optionally clear path after successful import
+        // gObjPath[0] = 0;
+        // If you track params for custom meshes:
+        // ParamStore ps = {}; ps.type = (EuclidShapeType)EUCLID_SHAPE_CUSTOM; RememberParams(id, ps);
+    }
 }
 
 int main(){
@@ -201,7 +236,7 @@ int main(){
 
                 if (!Euclid_IsDraggingGizmo(H)) {
                     EuclidObjectID id = Euclid_RayPick(H, (float)xpx, (float)ypx);
-                    SetSelectionBoth(id); // <-- set engine & local
+                    SetSelectionBoth(id);
                 }
                 return;
             } else if (a == GLFW_RELEASE) {
@@ -222,6 +257,15 @@ int main(){
 
     glfwSetFramebufferSizeCallback(win, [](GLFWwindow*,int w,int h){
         Euclid_Resize(H,w,h); // framebuffer size (pixels)
+    });
+
+    // Drag & drop for .obj
+    glfwSetDropCallback(win, [](GLFWwindow* /*w*/, int count, const char** paths){
+        for (int i=0; i<count; ++i) {
+            if (EndsWithNoCase(paths[i], ".obj")) {
+                DoImportOBJ(paths[i], /*normalize=*/true);
+            }
+        }
     });
 
     // UI state
@@ -334,9 +378,23 @@ int main(){
             }
         }
 
+        // OBJ Import UI
+        ImGui::Separator();
+        ImGui::Text("Import OBJ");
+        ImGui::PushItemWidth(360.0f);
+        ImGui::InputText("##objpath", gObjPath, IM_ARRAYSIZE(gObjPath));
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::Checkbox("Normalize to unit", &gNormalizeOBJ);
+        ImGui::SameLine();
+        if (ImGui::Button("Import")) {
+            DoImportOBJ(gObjPath, gNormalizeOBJ);
+        }
+        ImGui::TextDisabled("Tip: Drag & drop .obj files anywhere on the window to import.");
+
         // Engine selection (may be 0) and fallback to local
         EuclidObjectID engSel=0; Euclid_GetSelection(H, &engSel);
-        currentSelection = engSel ? engSel : gLocalSelected;
+        EuclidObjectID currentSelection = engSel ? engSel : gLocalSelected;
 
         ImGui::Separator();
         ImGui::Text("Selected (engine/local): %llu / %llu",
@@ -397,7 +455,9 @@ int main(){
                         edited |= ImGui::DragFloat("Radius", &ps.circle.radius, 0.01f, 0.001f, 100.0f);
                         edited |= ImGui::DragInt  ("Segments",&ps.circle.segments,1, 3, 2048);
                         break;
-                    default: break;
+                    default:
+                        ImGui::TextDisabled("Imported mesh (no param sliders).");
+                        break;
                 }
 
                 if (ImGui::Button("Apply (Recreate)")) {
