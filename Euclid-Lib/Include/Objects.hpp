@@ -8,7 +8,7 @@
 #include <vector>    
 
 #include "Euclid_Types.h"  // EuclidObjectID, EuclidShapeType, EuclidTransform (ensure it has CONE, CYLINDER, PRISM, CIRCLE)
-#include "Math.h"          // TRS(tf)
+#include "Utils.h"          // TRS(tf)
 
 namespace Euclid {
 
