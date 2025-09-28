@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: euclid-client-deployment
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: euclid-client-pod
+  template:
+    metadata:
+      labels:
+        app: euclid-client-pod
+    spec:
+      containers:
+        - name: euclid-client-container
+          image: <IMAGE>
+          ports:
+            - containerPort: 8080
+      dnsPolicy: ClusterFirstWithHostNet
