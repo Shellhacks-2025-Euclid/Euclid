@@ -184,40 +184,45 @@ void Core::InitShader() {
     translationVertex.Init(GL_VERTEX_SHADER,
     R"(
     #version 330 core
-    layout (location=0) in vec3 aStartWS;   // same for all 4 verts (per-axis)
-    layout (location=1) in vec3 aEndWS;     // same for all 4 verts (per-axis)
+    layout (location=0) in vec3 aStartWS;   // baked at origin (0,0,0)
+    layout (location=1) in vec3 aEndWS;     // baked end (e.g., (L,0,0))
     layout (location=2) in float aSide;     // 0 for start edge, 1 for end edge
-    layout (location=3) in float aCorner;   // -1 or +1 (offset direction)
-    layout (location=4) in vec3 aColor;     // axis color (RGB)
+    layout (location=3) in float aCorner;   // -1 / +1
+    layout (location=4) in vec3 aColor;
 
-    uniform mat4 uViewProj;
-    uniform vec2 uViewportPx;     // (w,h)
-    uniform float uLinePx;        // thickness in pixels
+    uniform mat4  uViewProj;
+    uniform vec2  uViewportPx;     // (w,h)
+    uniform float uLinePx;         // line thickness
+    uniform vec3  uOrigin;         // new: where to place gizmo
+    uniform float uLength;         // new: desired length in world units
+    uniform float uBakedLength;    // new: whatever you baked (e.g., 2.0)
 
     out vec3 vColor;
 
-    vec4 toClip(vec3 p){
-        return uViewProj * vec4(p,1.0);
-    }
+    vec4 toClip(vec3 p){ return uViewProj * vec4(p,1.0); }
 
-    void main()
-    {
-        vec4 P0 = toClip(aStartWS);
-        vec4 P1 = toClip(aEndWS);
+    void main(){
+        // scale the segment from baked length to desired length
+        float s = (uBakedLength > 1e-6) ? (uLength / uBakedLength) : 1.0;
+
+        vec3 start = uOrigin + aStartWS;                    // aStartWS ~ (0,0,0)
+        vec3 end   = uOrigin + (aStartWS + (aEndWS - aStartWS) * s);
+
+        vec4 P0 = toClip(start);
+        vec4 P1 = toClip(end);
 
         // NDC positions
         vec2 ndc0 = P0.xy / P0.w;
         vec2 ndc1 = P1.xy / P1.w;
 
-        // line dir in NDC and its normal
         vec2 dir = normalize(ndc1 - ndc0 + 1e-8);
         vec2 nrm = vec2(-dir.y, dir.x);
 
-        // convert pixel size to NDC units
-        vec2 px2ndc = 2.0 / uViewportPx;   // 2 because NDC is [-1,1]
-        vec2 offsetNDC = nrm * aCorner * uLinePx * 0.5 * px2ndc;
+        // px → NDC
+        vec2 px2ndc = 2.0 / uViewportPx;
+        vec2 offsetNDC = nrm * aCorner * (uLinePx * 0.5) * px2ndc;
 
-        // select clip endpoint and apply offset in clip space
+        // pick endpoint and offset
         vec4 P = mix(P0, P1, aSide);
         vec2 ndc = (P.xy / P.w) + offsetNDC;
 
@@ -240,17 +245,14 @@ void Core::InitShader() {
     rotationVertex.Init(GL_VERTEX_SHADER,
     R"(
     #version 330 core
-    // We draw with glDrawArrays(GL_TRIANGLE_STRIP, 0, 2*N)
-    // where N = uSegments+1 to close the loop.
-
-    uniform mat4 uModel;          // gizmo transform
-    uniform mat4 uViewProj;
-    uniform vec2 uViewportPx;
-    uniform float uRadius;        // world radius of the ring
-    uniform float uRingPx;        // ring thickness (pixels)
-    uniform int uSegments;        // e.g., 64
-    uniform vec3 uAxis;           // ring axis in object space (unit)
-    uniform vec3 uColor;
+    uniform mat4  uViewProj;
+    uniform vec2  uViewportPx;
+    uniform float uRadius;
+    uniform float uRingPx;
+    uniform int   uSegments;
+    uniform vec3  uAxis;     // unit in world
+    uniform vec3  uColor;
+    uniform vec3  uOrigin;   // new
 
     out vec3 vColor;
 
@@ -259,35 +261,27 @@ void Core::InitShader() {
     }
 
     void main(){
-        int i = gl_VertexID / 2;                 // segment index
-        int side = gl_VertexID & 1;              // 0/1 = inner/outer side
+        int i = gl_VertexID / 2;
+        int side = gl_VertexID & 1;
 
-        // Build orthonormal basis in object space for the ring plane
         vec3 N = normalize(uAxis);
         vec3 X = anyPerp(N);
         vec3 Y = normalize(cross(N, X));
 
-        float t = 2.0*3.14159265 * float(i) / float(uSegments);
-        vec3 posOS = X * cos(t) + Y * sin(t);
-        vec3 centerWS = (uModel * vec4(0,0,0,1)).xyz;
-        vec3 pWS = (uModel * vec4(posOS * uRadius, 1.0)).xyz;
-
-        // Clip endpoints for current and next sample (for NDC direction)
-        // Compute neighbor on circle to get screen tangent
-        float tN = 2.0*3.14159265 * float((i+1) % uSegments) / float(uSegments);
-        vec3 pNextWS = (uModel * vec4((X*cos(tN) + Y*sin(tN)) * uRadius, 1.0)).xyz;
+        float t = 6.2831853 * float(i) / float(uSegments);
+        vec3 pWS     = uOrigin + (X * cos(t) + Y * sin(t)) * uRadius;
+        float tNext  = 6.2831853 * float((i+1)%uSegments) / float(uSegments);
+        vec3 pNextWS = uOrigin + (X * cos(tNext) + Y * sin(tNext)) * uRadius;
 
         vec4 P  = uViewProj * vec4(pWS, 1.0);
         vec4 PN = uViewProj * vec4(pNextWS, 1.0);
 
-        vec2 ndc  = P.xy  / P.w;
+        vec2 ndc  = P.xy / P.w;
         vec2 ndcN = PN.xy / PN.w;
 
-        // screen tangent and outward normal in NDC
         vec2 tg = normalize(ndcN - ndc + 1e-8);
         vec2 n2 = vec2(-tg.y, tg.x);
 
-        // pixel to NDC
         vec2 px2ndc = 2.0 / uViewportPx;
         vec2 offset = n2 * (side == 0 ? -1.0 : 1.0) * (uRingPx * 0.5) * px2ndc;
 
@@ -307,20 +301,28 @@ void Core::InitShader() {
     transformationVertex.Init(GL_VERTEX_SHADER,
     R"(
     #version 330 core
-    layout (location=0) in vec3 aCenterWS;  // handle center (axis end in WS)
+    layout (location=0) in vec3 aCenterWS;  // baked axis-end at origin (e.g., (L,0,0))
     layout (location=1) in vec3 aColor;
-    layout (location=2) in vec2 aCorner;    // (-1,-1),(-1,1),(1,-1),(1,1)
+    layout (location=2) in vec2 aCorner;
 
-    uniform mat4 uViewProj;
-    uniform vec2 uViewportPx;
-    uniform float uSizePx;        // square edge in pixels
+    uniform mat4  uViewProj;
+    uniform vec2  uViewportPx;
+    uniform float uSizePx;
+    uniform vec3  uOrigin;         // new
+    uniform float uLength;         // new
+    uniform float uBakedLength;    // new
 
     out vec3 vColor;
 
     vec4 toClip(vec3 p){ return uViewProj * vec4(p,1); }
 
     void main(){
-        vec4 P = toClip(aCenterWS);
+        float s = (uBakedLength > 1e-6) ? (uLength / uBakedLength) : 1.0;
+
+        // move baked center to desired origin and scale along axis
+        vec3 centerWS = uOrigin + aCenterWS * s;
+
+        vec4 P = toClip(centerWS);
         vec2 px2ndc = 2.0 / uViewportPx;
         vec2 offset = aCorner * (uSizePx * 0.5) * px2ndc;
 
@@ -370,6 +372,17 @@ void Core::InitShader() {
     glUniform3f(glGetUniformLocation(gridShader.GetID(),"uAxisZColor"), 0.35f,0.65f,0.95f);
     glUniform3f(glGetUniformLocation(gridShader.GetID(),"uBgColor"),    0.06f,0.07f,0.08f);
     glUseProgram(0);
+    
+    BuildTranslationGizmo(glm::vec3(0), mGizmoLength);
+    BuildScaleTips(glm::vec3(0), mGizmoLength);
+    
+
+    glUniform1f (glGetUniformLocation(translationShader.GetID(),"uLength"), mGizmoLength);
+    glUniform1f (glGetUniformLocation(translationShader.GetID(),"uBakedLength"), 2.0f); // your baked L
+    
+
+    glUniform1f(glGetUniformLocation(transformationShader.GetID(),"uLength"), mGizmoLength);
+    glUniform1f(glGetUniformLocation(transformationShader.GetID(),"uBakedLength"), 2.0f);
 }
 void Core::UseShader() {
     mainShader.Use();

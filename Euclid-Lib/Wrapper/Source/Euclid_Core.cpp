@@ -73,3 +73,119 @@ EUCLID_EXTERN_C EUCLID_API void EUCLID_CALL Euclid_Render(EuclidHandle h)
         s->core.Render();
     }
 }
+
+
+// Shapes and gizmo calls
+static inline EuclidResult ok_or(EuclidState* s){ return s ? EUCLID_OK : EUCLID_ERR_BAD_PARAM; }
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL Euclid_ClearScene(EuclidHandle h) {
+    if (auto* s=(EuclidState*)h) {
+        s->objects.clear();
+        s->selected = 0;
+        s->core.RequestRebuildScene(); // tell core to drop GPU refs if needed
+        return EUCLID_OK;
+    }
+    return EUCLID_ERR_BAD_PARAM;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_CreateShape(EuclidHandle h, const EuclidCreateShapeDesc* desc, EuclidObjectID* out_id) {
+    if (!h || !desc || !out_id) return EUCLID_ERR_BAD_PARAM;
+    auto* s=(EuclidState*)h;
+    auto id = s->nextID++;
+
+    Euclid::Object* obj = s->core.CreateObject(desc->type, desc->params, desc->xform, id);
+    if (!obj) return EUCLID_ERR_BAD_PARAM;
+
+    s->objects.emplace(id, std::unique_ptr<Euclid::Object>(obj));
+    *out_id = id;
+    return EUCLID_OK;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_DeleteObject(EuclidHandle h, EuclidObjectID id) {
+    if (auto* s=(EuclidState*)h) {
+        s->core.DestroyObjectGPU(id);
+        s->objects.erase(id);
+        if (s->selected==id) s->selected=0;
+        return EUCLID_OK;
+    }
+    return EUCLID_ERR_BAD_PARAM;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_SelectObject(EuclidHandle h, EuclidObjectID id) {
+    if (auto* s=(EuclidState*)h) {
+        if (id!=0 && !s->objects.count(id)) return EUCLID_ERR_BAD_PARAM;
+        s->selected = id;
+        s->core.SetSelection(id);
+        return EUCLID_OK;
+    }
+    return EUCLID_ERR_BAD_PARAM;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_GetSelection(EuclidHandle h, EuclidObjectID* out_id) {
+    if (!out_id) return EUCLID_ERR_BAD_PARAM;
+    if (auto* s=(EuclidState*)h) { *out_id = s->selected; return EUCLID_OK; }
+    return EUCLID_ERR_BAD_PARAM;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_SetGizmoMode(EuclidHandle h, EuclidGizmoMode mode) {
+    if (auto* s=(EuclidState*)h) {
+        s->gizmoMode = mode;
+        s->core.SetGizmoMode(mode);
+        return EUCLID_OK;
+    }
+    return EUCLID_ERR_BAD_PARAM;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidGizmoMode EUCLID_CALL
+Euclid_GetGizmoMode(EuclidHandle h) {
+    if (auto* s=(EuclidState*)h) return s->gizmoMode;
+    return EUCLID_GIZMO_NONE;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_HitTestSelect(EuclidHandle h, double x, double y, EuclidObjectID* out_id) {
+    if (!out_id) return EUCLID_ERR_BAD_PARAM;
+    if (auto* s=(EuclidState*)h) {
+        auto id = s->core.RayPick(static_cast<float>(x), static_cast<float>(y));
+        *out_id = id;
+        s->selected = id;
+        s->core.SetSelection(id);
+        return EUCLID_OK;
+    }
+    return EUCLID_ERR_BAD_PARAM;
+}
+
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_GetObjectTransform(EuclidHandle h, EuclidObjectID id, EuclidTransform* out_tf) {
+    if (!out_tf) return EUCLID_ERR_BAD_PARAM;
+    if (auto* s=(EuclidState*)h) return s->core.GetObjectTransform(id, *out_tf);
+    return EUCLID_ERR_BAD_PARAM;
+}
+EUCLID_EXTERN_C EUCLID_API EuclidResult EUCLID_CALL
+Euclid_SetObjectTransform(EuclidHandle h, EuclidObjectID id, const EuclidTransform* tf) {
+    if (!tf) return EUCLID_ERR_BAD_PARAM;
+    if (auto* s=(EuclidState*)h) return s->core.SetObjectTransform(id, *tf);
+    return EUCLID_ERR_BAD_PARAM;
+}
+EUCLID_EXTERN_C EUCLID_API EuclidObjectID EUCLID_CALL Euclid_RayPick(EuclidHandle h, float x, float y){
+    if (!h) return 0;
+    auto* s = (EuclidState*)h;
+    return s->core.RayPick(x, y);
+}
+
+EUCLID_EXTERN_C EUCLID_API void EUCLID_CALL Euclid_SetSelection(EuclidHandle h, EuclidObjectID id){
+    if (!h) return;
+    auto* s = (EuclidState*)h;
+    s->core.SetSelection(id);
+}
+
+EUCLID_EXTERN_C EUCLID_API int EUCLID_CALL Euclid_IsDraggingGizmo(EuclidHandle h){
+    if (!h) return 0;
+    auto* s = (EuclidState*)h;
+    return s->core.IsDraggingGizmo() ? 1 : 0;
+}
