@@ -6,12 +6,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
 
-#include "Euclid_Types.h"  // EuclidObjectID, EuclidShapeType, EuclidTransform
-#include "Math.h"
+#include "Euclid_Types.h"  // EuclidObjectID, EuclidShapeType, EuclidTransform (ensure it has CONE, CYLINDER, PRISM, CIRCLE)
+#include "Math.h"          // TRS(tf)
 
 namespace Euclid {
-
-
 
 struct Object {
     EuclidObjectID id = 0;
@@ -68,7 +66,9 @@ private:
     std::unordered_map<EuclidObjectID, std::unique_ptr<Object>> mObjects;
     EuclidObjectID mSelected = 0;
 
-    SharedMesh mCube, mPlane, mSphere, mTorus;
+    // Primitives
+    SharedMesh mCube, mPlane, mSphere, mTorus,
+               mCone, mCylinder, mPrism, mCircle;
 
     struct Ray { glm::vec3 o; glm::vec3 d; };
     static Ray  ScreenRay(float x, float y, int w, int h, const glm::mat4& invViewProj);
@@ -76,3 +76,4 @@ private:
 };
 
 } // namespace Euclid
+

@@ -1,6 +1,10 @@
 #include "Objects.hpp"
 #include <glad/glad.h>
 
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
 namespace Euclid {
 
 // -------- SharedMesh --------
@@ -10,75 +14,391 @@ void SharedMesh::Release() {
     if (vao) { glDeleteVertexArrays(1, &vao); vao = 0; }
 }
 
+static inline void MulScale(EuclidTransform& tf, float sx, float sy, float sz) {
+    tf.scale[0] *= sx; tf.scale[1] *= sy; tf.scale[2] *= sz;
+}
+
+// Map per-shape params to transform scale for unit meshes.
+// Assumes unit sizes built as in your meshes:
+//  cube edge=1, sphere radius=0.5, plane 1x1 (XZ), cone r=0.5 h=1, cyl r=0.5 h=1,
+//  prism radius~0.5 (equilateral tri), circle radius=0.5,
+//  torus base (R=0.5, r=0.2) -> extents XZ ~ (R+r)=0.7, Y ~ (2r)=0.4.
+static void ApplyParamsToScale(EuclidShapeType t, const void* params, EuclidTransform& tf) {
+    if (!params) return;
+    switch (t) {
+        case EUCLID_SHAPE_CUBE: {
+            const EuclidCubeParams& p = *reinterpret_cast<const EuclidCubeParams*>(params);
+            MulScale(tf, p.size, p.size, p.size);
+        } break;
+        case EUCLID_SHAPE_SPHERE: {
+            const EuclidSphereParams& p = *reinterpret_cast<const EuclidSphereParams*>(params);
+            float s = (p.radius > 0.f) ? (p.radius / 0.5f) : 1.f; // base radius 0.5
+            MulScale(tf, s, s, s);
+        } break;
+        case EUCLID_SHAPE_PLANE: {
+            const EuclidPlaneParams& p = *reinterpret_cast<const EuclidPlaneParams*>(params);
+            MulScale(tf, p.width, 1.f, p.height);
+        } break;
+        case EUCLID_SHAPE_CONE: {
+            const EuclidConeParams& p = *reinterpret_cast<const EuclidConeParams*>(params);
+            float sR = (p.radius > 0.f) ? (p.radius / 0.5f) : 1.f; // base r=0.5
+            float sH = (p.height > 0.f) ? (p.height / 1.f) : 1.f;  // base h=1
+            MulScale(tf, 2.f*sR*0.5f, sH, 2.f*sR*0.5f); // simplify to (sR, sH, sR)
+            // equivalently: MulScale(tf, sR, sH, sR);
+        } break;
+        case EUCLID_SHAPE_CYLINDER: {
+            const EuclidCylinderParams& p = *reinterpret_cast<const EuclidCylinderParams*>(params);
+            float sR = (p.radius > 0.f) ? (p.radius / 0.5f) : 1.f;
+            float sH = (p.height > 0.f) ? (p.height / 1.f) : 1.f;
+            MulScale(tf, sR, sH, sR);
+        } break;
+        case EUCLID_SHAPE_PRISM: {
+            const EuclidPrismParams& p = *reinterpret_cast<const EuclidPrismParams*>(params);
+            float sR = (p.radius > 0.f) ? (p.radius / 0.5f) : 1.f; // our built tri radius~0.5
+            float sH = (p.height > 0.f) ? (p.height / 1.f) : 1.f;
+            MulScale(tf, sR, sH, sR);
+            // NOTE: 'sides' is ignored with current fixed 3-sided mesh.
+        } break;
+        case EUCLID_SHAPE_CIRCLE: {
+            const EuclidCircleParams& p = *reinterpret_cast<const EuclidCircleParams*>(params);
+            float s = (p.radius > 0.f) ? (p.radius / 0.5f) : 1.f; // base r=0.5
+            MulScale(tf, s, 1.f, s);
+        } break;
+        case EUCLID_SHAPE_TORUS: {
+            const EuclidTorusParams& p = *reinterpret_cast<const EuclidTorusParams*>(params);
+            // Approximate: scale XZ to match (R+r), scale Y to match r.
+            float sxz = (p.majorRadius + p.minorRadius) / 0.7f; // base (R+r)=0.7
+            float sy  = (p.minorRadius > 0.f) ? (p.minorRadius / 0.2f) : 1.f; // base r=0.2
+            MulScale(tf, sxz, sy, sxz);
+        } break;
+        default: break;
+    }
+}
+
+namespace {
+    struct V { float p[3]; float c[3]; };
+    constexpr float PI = 3.14159265358979323846f;
+
+    inline V VC(float x, float y, float z, float r, float g, float b) {
+        return {{x,y,z},{r,g,b}};
+    }
+
+    inline void UploadMesh(SharedMesh& dst,
+                           const std::vector<V>& verts,
+                           const std::vector<unsigned>& idx)
+    {
+        glGenVertexArrays(1, &dst.vao);
+        glGenBuffers(1, &dst.vbo);
+
+        glBindVertexArray(dst.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, dst.vbo);
+        glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(V), verts.data(), GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)(3*sizeof(float)));
+
+        if (!idx.empty()) {
+            glGenBuffers(1, &dst.ebo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dst.ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, idx.size()*sizeof(unsigned), idx.data(), GL_STATIC_DRAW);
+            dst.indexCount = (GLsizei)idx.size();
+            dst.indexed = true;
+        } else {
+            dst.indexCount = (GLsizei)verts.size();
+            dst.indexed = false;
+        }
+
+        glBindVertexArray(0);
+    }
+
+    // ---------- Primitive builders ----------
+
+    // Non-indexed cube (same layout/colors you used)
+    void BuildCube(SharedMesh& out) {
+        const V cubeVerts[] = {
+            // back
+            {{-0.5f,-0.5f,-0.5f},{1,0,0}}, {{0.5f,-0.5f,-0.5f},{0,1,0}}, {{0.5f,0.5f,-0.5f},{0,0,1}},
+            {{0.5f,0.5f,-0.5f},{0,0,1}}, {{-0.5f,0.5f,-0.5f},{1,1,0}}, {{-0.5f,-0.5f,-0.5f},{1,0,0}},
+            // front
+            {{-0.5f,-0.5f, 0.5f},{1,0,1}}, {{0.5f,-0.5f, 0.5f},{0,1,1}}, {{0.5f,0.5f, 0.5f},{1,1,1}},
+            {{0.5f,0.5f, 0.5f},{1,1,1}}, {{-0.5f,0.5f, 0.5f},{.5,.5,.5}}, {{-0.5f,-0.5f, 0.5f},{1,0,1}},
+            // left
+            {{-0.5f, 0.5f, 0.5f},{0,1,.5}}, {{-0.5f, 0.5f,-0.5f},{0,.5,1}}, {{-0.5f,-0.5f,-0.5f},{1,.5,0}},
+            {{-0.5f,-0.5f,-0.5f},{1,.5,0}}, {{-0.5f,-0.5f, 0.5f},{.5,1,0}}, {{-0.5f, 0.5f, 0.5f},{0,1,.5}},
+            // right
+            {{0.5f, 0.5f, 0.5f},{1,0,.5}}, {{0.5f, 0.5f,-0.5f},{.5,0,1}}, {{0.5f,-0.5f,-0.5f},{0,.5,.5}},
+            {{0.5f,-0.5f,-0.5f},{0,.5,.5}}, {{0.5f,-0.5f, 0.5f},{.5,1,.5}}, {{0.5f, 0.5f, 0.5f},{1,0,.5}},
+            // bottom
+            {{-0.5f,-0.5f,-0.5f},{.3,.7,.5}}, {{0.5f,-0.5f,-0.5f},{.7,.3,.5}}, {{0.5f,-0.5f,0.5f},{.5,.7,.3}},
+            {{0.5f,-0.5f,0.5f},{.5,.7,.3}}, {{-0.5f,-0.5f,0.5f},{.3,.5,.7}}, {{-0.5f,-0.5f,-0.5f},{.3,.7,.5}},
+            // top
+            {{-0.5f,0.5f,-0.5f},{.7,.5,.3}}, {{0.5f,0.5f,-0.5f},{.5,.3,.7}}, {{0.5f,0.5f,0.5f},{.7,.7,.7}},
+            {{0.5f,0.5f,0.5f},{.7,.7,.7}}, {{-0.5f,0.5f,0.5f},{.2,.8,.4}}, {{-0.5f,0.5f,-0.5f},{.7,.5,.3}},
+        };
+        std::vector<V> verts(std::begin(cubeVerts), std::end(cubeVerts));
+        std::vector<unsigned> idx; // none
+        UploadMesh(out, verts, idx);
+    }
+
+    // Non-indexed plane (1x1 in XZ at y=0)
+    void BuildPlane(SharedMesh& out) {
+        const V planeVerts[] = {
+            {{-0.5f,0,-0.5f},{1,1,1}}, {{0.5f,0,-0.5f},{1,1,1}}, {{0.5f,0,0.5f},{1,1,1}},
+            {{0.5f,0,0.5f},{1,1,1}}, {{-0.5f,0,0.5f},{1,1,1}}, {{-0.5f,0,-0.5f},{1,1,1}},
+        };
+        std::vector<V> verts(std::begin(planeVerts), std::end(planeVerts));
+        std::vector<unsigned> idx; // none
+        UploadMesh(out, verts, idx);
+    }
+
+    // Sphere (lat/long)
+    void BuildSphere(SharedMesh& out, int stacks=24, int slices=36, float R=0.5f) {
+        std::vector<V> v; v.reserve((stacks+1)*(slices+1));
+        std::vector<unsigned> idx; idx.reserve(stacks*slices*6);
+
+        for (int i=0;i<=stacks;i++){
+            float t  = float(i)/stacks;
+            float th = t*PI;               // [0..PI]
+            float y  = R*std::cos(th);
+            float r  = R*std::sin(th);
+            for (int j=0;j<=slices;j++){
+                float s  = float(j)/slices;
+                float ph = s*2*PI;         // [0..2PI]
+                float x  = r*std::cos(ph);
+                float z  = r*std::sin(ph);
+                float cr = 0.5f + 0.5f*(x/R);
+                float cg = 0.5f + 0.5f*(y/R);
+                float cb = 0.5f + 0.5f*(z/R);
+                v.push_back(VC(x,y,z, cr,cg,cb));
+            }
+        }
+        int stride = slices+1;
+        for (int i=0;i<stacks;i++){
+            for (int j=0;j<slices;j++){
+                unsigned a = i*stride + j;
+                unsigned b = a + stride;
+                idx.push_back(a); idx.push_back(b); idx.push_back(a+1);
+                idx.push_back(b); idx.push_back(b+1); idx.push_back(a+1);
+            }
+        }
+        UploadMesh(out, v, idx);
+    }
+
+    // Torus
+    void BuildTorus(SharedMesh& out, int segU=48, int segV=24, float R=0.5f, float r=0.2f) {
+        std::vector<V> v; v.reserve((segU+1)*(segV+1));
+        std::vector<unsigned> idx; idx.reserve(segU*segV*6);
+
+        for (int i=0;i<=segU;i++){
+            float u = (float)i/segU * 2*PI;
+            float cu = std::cos(u), su = std::sin(u);
+            for (int j=0;j<=segV;j++){
+                float vv = (float)j/segV * 2*PI;
+                float cv = std::cos(vv), sv = std::sin(vv);
+                float x = (R + r*cv)*cu;
+                float y = r*sv;
+                float z = (R + r*cv)*su;
+                float cr = 0.5f+0.5f*cv;
+                float cg = 0.5f+0.5f*sv;
+                float cb = 0.5f+0.5f*cu;
+                v.push_back(VC(x,y,z, cr,cg,cb));
+            }
+        }
+        int stride = segV+1;
+        for (int i=0;i<segU;i++){
+            for (int j=0;j<segV;j++){
+                unsigned a = i*stride + j;
+                unsigned b = a + stride;
+                idx.push_back(a); idx.push_back(b); idx.push_back(a+1);
+                idx.push_back(b); idx.push_back(b+1); idx.push_back(a+1);
+            }
+        }
+        UploadMesh(out, v, idx);
+    }
+
+    // Cone (base at y=-h/2, apex at y=+h/2)
+    void BuildCone(SharedMesh& out, int seg=32, float radius=0.5f, float h=1.0f) {
+        float y0 = -0.5f*h, y1 = 0.5f*h;
+        std::vector<V> v; v.reserve(seg + 1 + 1);
+        std::vector<unsigned> idx;
+
+        for (int i=0;i<seg;i++){
+            float a = (float)i/seg * 2*PI;
+            float x = radius*std::cos(a);
+            float z = radius*std::sin(a);
+            v.push_back(VC(x,y0,z, 0.9f,0.6f,0.2f));
+        }
+        unsigned baseCenter = (unsigned)v.size();
+        v.push_back(VC(0,y0,0, 0.8f,0.5f,0.2f));
+
+        unsigned apex = (unsigned)v.size();
+        v.push_back(VC(0,y1,0, 0.95f,0.35f,0.35f));
+
+        // base fan
+        for (int i=0;i<seg;i++){
+            unsigned a = (unsigned)i;
+            unsigned b = (unsigned)((i+1)%seg);
+            idx.push_back(baseCenter); idx.push_back(b); idx.push_back(a);
+        }
+        // sides
+        for (int i=0;i<seg;i++){
+            unsigned a = (unsigned)i;
+            unsigned b = (unsigned)((i+1)%seg);
+            idx.push_back(a); idx.push_back(b); idx.push_back(apex);
+        }
+        UploadMesh(out, v, idx);
+    }
+
+    // Cylinder (axis Y, height h, radius r)
+    void BuildCylinder(SharedMesh& out, int seg=32, float radius=0.5f, float h=1.0f) {
+        float y0 = -0.5f*h, y1 = 0.5f*h;
+        std::vector<V> v; v.reserve(2*seg + 2);
+        std::vector<unsigned> idx;
+
+        // bottom ring
+        for (int i=0;i<seg;i++){
+            float a = (float)i/seg * 2*PI;
+            float x = radius*std::cos(a);
+            float z = radius*std::sin(a);
+            v.push_back(VC(x,y0,z, 0.7f,0.7f,0.9f));
+        }
+        unsigned bottomCenter = (unsigned)v.size();
+        v.push_back(VC(0,y0,0, 0.6f,0.6f,0.9f));
+
+        // top ring
+        unsigned topStart = (unsigned)v.size();
+        for (int i=0;i<seg;i++){
+            float a = (float)i/seg * 2*PI;
+            float x = radius*std::cos(a);
+            float z = radius*std::sin(a);
+            v.push_back(VC(x,y1,z, 0.7f,0.9f,0.7f));
+        }
+        unsigned topCenter = (unsigned)v.size();
+        v.push_back(VC(0,y1,0, 0.6f,0.9f,0.6f));
+
+        // caps
+        for (int i=0;i<seg;i++){
+            unsigned a = (unsigned)i;
+            unsigned b = (unsigned)((i+1)%seg);
+            // bottom fan
+            idx.push_back(bottomCenter); idx.push_back(b); idx.push_back(a);
+            // top fan
+            unsigned ta = topStart + a;
+            unsigned tb = topStart + b;
+            idx.push_back(topCenter); idx.push_back(ta); idx.push_back(tb);
+        }
+
+        // sides
+        for (int i=0;i<seg;i++){
+            unsigned a0 = (unsigned)i;
+            unsigned b0 = (unsigned)((i+1)%seg);
+            unsigned a1 = topStart + i;
+            unsigned b1 = topStart + ((i+1)%seg);
+            idx.push_back(a0); idx.push_back(b0); idx.push_back(a1);
+            idx.push_back(b0); idx.push_back(b1); idx.push_back(a1);
+        }
+        UploadMesh(out, v, idx);
+    }
+
+    // Triangular prism (equilateral XZ, height along Y)
+    void BuildTriPrism(SharedMesh& out, float height=1.0f, float radius=0.5f) {
+        float y0 = -0.5f*height, y1 = 0.5f*height;
+        std::vector<V> v; v.reserve(6);
+        std::vector<unsigned> idx;
+
+        for (int k=0;k<3;k++){
+            float a = (PI/2.0f) + k*(2*PI/3.0f);
+            float x = radius*std::cos(a);
+            float z = radius*std::sin(a);
+            v.push_back(VC(x,y0,z, 0.9f,0.9f,0.3f)); // bottom
+        }
+        for (int k=0;k<3;k++){
+            float a = (PI/2.0f) + k*(2*PI/3.0f);
+            float x = radius*std::cos(a);
+            float z = radius*std::sin(a);
+            v.push_back(VC(x,y1,z, 0.9f,0.6f,0.3f)); // top
+        }
+
+        // caps
+        idx.push_back(0); idx.push_back(2); idx.push_back(1);     // bottom
+        idx.push_back(3); idx.push_back(4); idx.push_back(5);     // top
+
+        // sides (three quads -> two tris each)
+        auto quad = [&](unsigned a, unsigned b, unsigned c, unsigned d){
+            idx.push_back(a); idx.push_back(b); idx.push_back(c);
+            idx.push_back(a); idx.push_back(c); idx.push_back(d);
+        };
+        quad(0,1,4,3);
+        quad(1,2,5,4);
+        quad(2,0,3,5);
+
+        UploadMesh(out, v, idx);
+    }
+
+    // Circle (filled disc) in XZ at y=0
+    void BuildCircle(SharedMesh& out, int seg=64, float radius=0.5f) {
+        std::vector<V> v; v.reserve(seg+1);
+        std::vector<unsigned> idx; idx.reserve(seg*3);
+        v.push_back(VC(0,0,0, 0.95f,0.95f,0.95f)); // center
+        for (int i=0;i<seg;i++){
+            float a = (float)i/seg * 2*PI;
+            float x = radius*std::cos(a);
+            float z = radius*std::sin(a);
+            float cr = 0.5f+0.5f*std::cos(a);
+            float cg = 0.5f+0.5f*std::sin(a);
+            v.push_back(VC(x,0,z, cr,cg,0.9f));
+        }
+        for (int i=0;i<seg;i++){
+            unsigned a = 1 + (unsigned)i;
+            unsigned b = 1 + (unsigned)((i+1)%seg);
+            idx.push_back(0); idx.push_back(a); idx.push_back(b);
+        }
+        UploadMesh(out, v, idx);
+    }
+} // anon
+
 // -------- ObjectStore: primitives --------
 void ObjectStore::InitPrimitives() {
-    // CUBE: 36-vertex, position+color like your existing cube (colors are placeholders)
-    struct V { float p[3]; float c[3]; };
-    const V cubeVerts[] = {
-        // back
-        {{-0.5f,-0.5f,-0.5f},{1,0,0}}, {{0.5f,-0.5f,-0.5f},{0,1,0}}, {{0.5f,0.5f,-0.5f},{0,0,1}},
-        {{0.5f,0.5f,-0.5f},{0,0,1}}, {{-0.5f,0.5f,-0.5f},{1,1,0}}, {{-0.5f,-0.5f,-0.5f},{1,0,0}},
-        // front
-        {{-0.5f,-0.5f, 0.5f},{1,0,1}}, {{0.5f,-0.5f, 0.5f},{0,1,1}}, {{0.5f,0.5f, 0.5f},{1,1,1}},
-        {{0.5f,0.5f, 0.5f},{1,1,1}}, {{-0.5f,0.5f, 0.5f},{.5,.5,.5}}, {{-0.5f,-0.5f, 0.5f},{1,0,1}},
-        // left
-        {{-0.5f, 0.5f, 0.5f},{0,1,.5}}, {{-0.5f, 0.5f,-0.5f},{0,.5,1}}, {{-0.5f,-0.5f,-0.5f},{1,.5,0}},
-        {{-0.5f,-0.5f,-0.5f},{1,.5,0}}, {{-0.5f,-0.5f, 0.5f},{.5,1,0}}, {{-0.5f, 0.5f, 0.5f},{0,1,.5}},
-        // right
-        {{0.5f, 0.5f, 0.5f},{1,0,.5}}, {{0.5f, 0.5f,-0.5f},{.5,0,1}}, {{0.5f,-0.5f,-0.5f},{0,.5,.5}},
-        {{0.5f,-0.5f,-0.5f},{0,.5,.5}}, {{0.5f,-0.5f, 0.5f},{.5,1,.5}}, {{0.5f, 0.5f, 0.5f},{1,0,.5}},
-        // bottom
-        {{-0.5f,-0.5f,-0.5f},{.3,.7,.5}}, {{0.5f,-0.5f,-0.5f},{.7,.3,.5}}, {{0.5f,-0.5f,0.5f},{.5,.7,.3}},
-        {{0.5f,-0.5f,0.5f},{.5,.7,.3}}, {{-0.5f,-0.5f,0.5f},{.3,.5,.7}}, {{-0.5f,-0.5f,-0.5f},{.3,.7,.5}},
-        // top
-        {{-0.5f,0.5f,-0.5f},{.7,.5,.3}}, {{0.5f,0.5f,-0.5f},{.5,.3,.7}}, {{0.5f,0.5f,0.5f},{.7,.7,.7}},
-        {{0.5f,0.5f,0.5f},{.7,.7,.7}}, {{-0.5f,0.5f,0.5f},{.2,.8,.4}}, {{-0.5f,0.5f,-0.5f},{.7,.5,.3}},
-    };
+    // Cube & Plane (non-indexed to match your current shader path)
+    BuildCube(mCube);
+    BuildPlane(mPlane);
 
-    glGenVertexArrays(1, &mCube.vao);
-    glGenBuffers(1, &mCube.vbo);
-    glBindVertexArray(mCube.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mCube.vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVerts), cubeVerts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0); glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)0);
-    glEnableVertexAttribArray(1); glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)(3 * sizeof(float)));
-    mCube.indexCount = 36; mCube.indexed = false;
-    glBindVertexArray(0);
-
-    // PLANE: 1x1 in XZ
-    const V planeVerts[] = {
-        {{-0.5f,0,-0.5f},{1,1,1}}, {{0.5f,0,-0.5f},{1,1,1}}, {{0.5f,0,0.5f},{1,1,1}},
-        {{0.5f,0,0.5f},{1,1,1}}, {{-0.5f,0,0.5f},{1,1,1}}, {{-0.5f,0,-0.5f},{1,1,1}},
-    };
-    glGenVertexArrays(1, &mPlane.vao);
-    glGenBuffers(1, &mPlane.vbo);
-    glBindVertexArray(mPlane.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mPlane.vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVerts), planeVerts, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0); glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)0);
-    glEnableVertexAttribArray(1); glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(V), (void*)(3 * sizeof(float)));
-    mPlane.indexCount = 6; mPlane.indexed = false;
-    glBindVertexArray(0);
-
-    // For now, sphere/torus: placeholders using cube mesh (safe to replace later)
-    mSphere = mCube;
-    mTorus  = mCube;
+    // Parametric shapes
+    BuildSphere   (mSphere,   /*stacks*/24, /*slices*/36, /*R*/0.5f);
+    BuildTorus    (mTorus,    /*segU*/48,   /*segV*/24,   /*R*/0.5f, /*r*/0.2f);
+    BuildCone     (mCone,     /*seg*/32,    /*radius*/0.5f, /*h*/1.0f);
+    BuildCylinder (mCylinder, /*seg*/32,    /*radius*/0.5f, /*h*/1.0f);
+    BuildTriPrism (mPrism,    /*height*/1.0f, /*radius*/0.5f);
+    BuildCircle   (mCircle,   /*seg*/64,    /*radius*/0.5f);
 }
 
 void ObjectStore::ReleasePrimitives() {
     mCube.Release();
-    // mSphere/mTorus reuse cube buffers (no duplicate deletion)
+    mSphere.Release();
+    mTorus.Release();
+    mCone.Release();
+    mCylinder.Release();
+    mPrism.Release();
+    mCircle.Release();
     mPlane.Release();
 }
 
 // -------- CRUD --------
-Object* ObjectStore::Create(EuclidShapeType t, const void* /*params*/,
+Object* ObjectStore::Create(EuclidShapeType t, const void* params,
                             const EuclidTransform& xform, EuclidObjectID id) {
     auto obj = std::make_unique<Object>();
     obj->id = id;
     obj->type = t;
     obj->tf = xform;
-    for (int i = 0; i < 3; ++i) if (obj->tf.scale[i] == 0.0f) obj->tf.scale[i] = 1.0f;
+
+    // Default non-zero scale
+    for (int i=0;i<3;++i) if (obj->tf.scale[i] == 0.0f) obj->tf.scale[i] = 1.0f;
+
+    // NEW: apply per-shape params to transform scale
+    ApplyParamsToScale(t, params, obj->tf);
+
     auto* raw = obj.get();
     mObjects.emplace(id, std::move(obj));
     return raw;
@@ -114,22 +434,31 @@ EuclidResult ObjectStore::SetTransform(EuclidObjectID id, const EuclidTransform&
 // -------- Bounds --------
 void ObjectStore::ShapeLocalBounds(EuclidShapeType t, glm::vec3& bmin, glm::vec3& bmax) const {
     switch (t) {
-        case EUCLID_SHAPE_CUBE:   bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
-        case EUCLID_SHAPE_PLANE:  bmin={-0.5f, 0.0f,-0.5f}; bmax={0.5f,0.0f,0.5f}; break;
-        case EUCLID_SHAPE_SPHERE: bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break; // unit sphere bounds
-        case EUCLID_SHAPE_TORUS:  bmin={-0.7f,-0.3f,-0.7f}; bmax={0.7f,0.3f,0.7f}; break; // rough
+        case EUCLID_SHAPE_CUBE:     bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
+        case EUCLID_SHAPE_PLANE:    bmin={-0.5f, 0.0f,-0.5f}; bmax={0.5f,0.0f,0.5f}; break;
+        case EUCLID_SHAPE_SPHERE:   bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
+        case EUCLID_SHAPE_TORUS:    bmin={-0.7f,-0.2f,-0.7f}; bmax={0.7f,0.2f,0.7f}; break; // R=0.5, r=0.2
+        case EUCLID_SHAPE_CONE:     bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
+        case EUCLID_SHAPE_CYLINDER: bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
+        case EUCLID_SHAPE_PRISM:    bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
+        case EUCLID_SHAPE_CIRCLE:   bmin={-0.5f, 0.0f,-0.5f}; bmax={0.5f,0.0f,0.5f}; break;
+        default:                    bmin={-0.5f,-0.5f,-0.5f}; bmax={0.5f,0.5f,0.5f}; break;
     }
 }
 
 // -------- Mesh routing --------
 const SharedMesh& ObjectStore::MeshFor(EuclidShapeType t) const {
     switch (t) {
-        case EUCLID_SHAPE_CUBE:   return mCube;
-        case EUCLID_SHAPE_PLANE:  return mPlane;
-        case EUCLID_SHAPE_SPHERE: return mSphere;
-        case EUCLID_SHAPE_TORUS:  return mTorus;
+        case EUCLID_SHAPE_CUBE:     return mCube;
+        case EUCLID_SHAPE_PLANE:    return mPlane;
+        case EUCLID_SHAPE_SPHERE:   return mSphere;
+        case EUCLID_SHAPE_TORUS:    return mTorus;
+        case EUCLID_SHAPE_CONE:     return mCone;
+        case EUCLID_SHAPE_CYLINDER: return mCylinder;
+        case EUCLID_SHAPE_PRISM:    return mPrism;
+        case EUCLID_SHAPE_CIRCLE:   return mCircle;
+        default:                    return mCube;
     }
-    return mCube; // fallback
 }
 
 // -------- Picking helpers --------

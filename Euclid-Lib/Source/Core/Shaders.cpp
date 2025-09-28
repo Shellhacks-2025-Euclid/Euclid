@@ -381,6 +381,7 @@ void Core::InitShader() {
     glUniform1f (glGetUniformLocation(translationShader.GetID(),"uBakedLength"), 2.0f); // your baked L
     
 
+    //glUniform3fv(glGetUniformLocation(transformationShader.GetID(),"uOrigin"), 1, &originWS[0]);
     glUniform1f(glGetUniformLocation(transformationShader.GetID(),"uLength"), mGizmoLength);
     glUniform1f(glGetUniformLocation(transformationShader.GetID(),"uBakedLength"), 2.0f);
 }
