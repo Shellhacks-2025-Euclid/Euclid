@@ -1,5 +1,3 @@
-"use client";
-
 export default function Logo({ theme, className }: { theme: "light" | "dark", className?: string }) {
   if (theme === "light") {
     return (
