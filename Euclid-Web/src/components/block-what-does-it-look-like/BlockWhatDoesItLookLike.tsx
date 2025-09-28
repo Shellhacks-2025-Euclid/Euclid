@@ -5,9 +5,10 @@ export default function BlockWhatDoesItLookLike() {
         <div
           className="w-full aspect-[6/4] md:w-1/2 flex justify-center items-center rounded-md bg-[#1f1f1f] dark:bg-gray-200"
           style={{
-            backgroundImage: "url()",
+            backgroundImage: "url(/examples/screen.png)",
             backgroundSize: "100%",
             backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
           }}
         >
         </div>

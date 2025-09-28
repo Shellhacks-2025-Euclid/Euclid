@@ -2,10 +2,18 @@
 
 import React from "react";
 import { type CarouselApi } from "@/components/ui/carousel";
-import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import Image from "next/image";
+
+const showcaseData = [
+  { imageUrl: "/examples/model_1.png", title: "Showcase 1" },
+  { imageUrl: "/examples/model_2.png", title: "Showcase 2" },
+  { imageUrl: "/examples/model_3.png", title: "Showcase 3" },
+  { imageUrl: "/examples/model_4.png", title: "Showcase 4" },
+  { imageUrl: "/examples/model_5.png", title: "Showcase 5" },
+];
 
 export default function BlockShowcases() {
   const [api, setApi] = React.useState<CarouselApi>();
@@ -31,15 +39,16 @@ export default function BlockShowcases() {
         setApi={setApi}
       >
         <CarouselContent>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-              <div>
-                <Card>
-                  <CardContent className="flex aspect-square items-center justify-center p-6">
-                    <span className="text-3xl font-semibold">{index + 1}</span>
-                  </CardContent>
-                </Card>
-              </div>
+          {showcaseData.map((v) => (
+            <CarouselItem key={v.title} className="md:basis-1/2 lg:basis-1/3 flex items-center">
+              <Image
+                src={v.imageUrl}
+                alt={v.title}
+                width={300}
+                height={300}
+                className="rounded-md object-contain w-full h-fit"
+                unoptimized={true}
+              />
             </CarouselItem>
           ))}
         </CarouselContent>
