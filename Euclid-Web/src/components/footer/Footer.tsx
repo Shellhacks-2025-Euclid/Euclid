@@ -1,7 +1,7 @@
 export default function Footer() {
   return (
     <footer className="w-full flex flex-col mt-[96px]">
-      <div className="w-full py-[48px] flex justify-between gap-12 flex-col lg:flex-row px-4 lg:px-0">
+      <div className="w-full py-[48px] flex justify-between gap-12 flex-col md:flex-row">
         <div className="flex flex-col">
           <p className="text-muted-foreground text-sm">
             Licences

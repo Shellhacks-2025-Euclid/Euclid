@@ -38,7 +38,7 @@ export default function RootLayout({
       disableTransitionOnChange
     >
       <main className="min-h-screen flex justify-center items-start">
-        <div className="flex flex-col w-full lg:w-[1200px] mx-auto">
+        <div className="flex flex-col w-full md:w-[1200px] mx-auto px-6 md:px-0">
           <Header />
           {children}
           <Footer />
