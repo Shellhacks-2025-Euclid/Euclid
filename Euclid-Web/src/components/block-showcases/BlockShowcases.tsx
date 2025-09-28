@@ -9,22 +9,6 @@ import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 
 export default function BlockShowcases() {
   const [api, setApi] = React.useState<CarouselApi>();
-  const [current, setCurrent] = React.useState(0);
-  const [count, setCount] = React.useState(0);
-
-  React.useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap() + 1);
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1);
-    });
-  }, [api]);
-
   return (
     <section id={"showcases"} className="flex gap-4 flex-col py-[150px]">
       <div className="w-full flex flex-col gap-2 mb-8">
@@ -32,7 +16,7 @@ export default function BlockShowcases() {
           What you can create with Euclid
         </h2>
         <p className="text-muted-foreground text-sm md:text-base">
-          However, Euclid's true potential lies in your imagination.
+          {"However, Euclid's true potential lies in your imagination."}
         </p>
       </div>
 
