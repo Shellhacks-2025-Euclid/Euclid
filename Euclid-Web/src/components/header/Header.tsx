@@ -22,26 +22,26 @@ import ShellHacks from "@/components/ui/shellhacks";
 const components: { title: string; href: string; description: string }[] = [
   {
     title: "Niyaz Nassyrov",
-    href: "#",
+    href: "https://www.linkedin.com/in/niyaz-nassyrov-b35205200",
     description:
       "Go expert, SWE, AI Enthusiast, and Machine Learning Researcher.",
   },
   {
     title: "Nikita Muzychenko",
-    href: "#",
+    href: "https://www.linkedin.com/in/nikitamu/",
     description:
       "C++ guru, 3D graphics enthusiast, and AI integration specialist.",
   },
   {
     title: "Dmytro Parkhomenko",
-    href: "#",
+    href: "https://www.linkedin.com/in/dmytro-parkhomenko-71a46b387/",
     description:
       "C# wizard, Cross-platform app developer, and graphics programming expert.",
   },
   {
     title: "Furkan Tellioğlu",
-    href: "#",
-    description: "Really cool guy.",
+    href: "https://www.linkedin.com/in/furkan-emir-t-427b10251/",
+    description: "Computer Science expert and Hardware specialist.",
   },
 ];
 
@@ -129,9 +129,9 @@ export default function Header() {
                 <ul className="grid w-[300px] gap-4">
                   <li>
                     <NavigationMenuLink asChild>
-                      <Link href="#">
+                      <Link href="mailto:nassyrovich@gmail.com">
                         <div className="font-medium flex items-center gap-2">
-                          <MailIcon/>
+                          <MailIcon />
                           Email
                         </div>
                         <div className="text-muted-foreground">
@@ -140,9 +140,9 @@ export default function Header() {
                       </Link>
                     </NavigationMenuLink>
                     <NavigationMenuLink asChild>
-                      <Link href="#">
+                      <Link href="https://t.me/niyaznassyrov">
                         <div className="font-medium flex items-center gap-2">
-                          <SendIcon/>
+                          <SendIcon />
                           Telegram
                         </div>
                         <div className="text-muted-foreground">

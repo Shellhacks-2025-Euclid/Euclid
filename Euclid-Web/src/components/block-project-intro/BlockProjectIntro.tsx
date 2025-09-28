@@ -2,22 +2,16 @@ import { generateGradient } from "@/lib/utils";
 
 const poweredByItems = [
   {
-    title: "Multi-agent system with the help of A2A ADK",
-    poweredBy: "Google Cloud",
-    link: "https://developers.googleblog.com/en/agents-adk-agent-engine-a2a-enhancements-google-io/",
-    image: "Google Cloud",
-  },
-  {
     title: "Integration of TRELLIS API",
     poweredBy: "Microsoft",
     link: "https://microsoft.github.io/TRELLIS/",
     image: "TRELLIS",
   },
   {
-    title: "Hosted on Azure",
-    poweredBy: "Microsoft Azure",
-    link: "https://azure.microsoft.com/",
-    image: "Azure",
+    title: "Hosted on Kubernetes Cluster",
+    poweredBy: "Digital Ocean",
+    link: "https://www.digitalocean.com/products/kubernetes",
+    image: "Kubernetes",
   },
   {
     title: "Developed by Euclid Team",
