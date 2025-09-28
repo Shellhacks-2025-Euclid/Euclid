@@ -282,4 +282,11 @@
     <Style Selector="GridSplitter.VSplit:pressed">
         <Setter Property="Opacity" Value="1" />
     </Style>
+
+    <Style Selector="TextBlock.PropGroup">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Opacity" Value="0.85" />
+        <Setter Property="Margin" Value="0,2,0,4" />
+    </Style>
 </Styles>

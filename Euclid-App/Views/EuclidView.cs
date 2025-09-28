@@ -5,6 +5,8 @@ using Avalonia;
 using Avalonia.Input;
 using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
+using Avalonia.Rendering;
+using Avalonia.VisualTree;
 using EuclidApp.Interop;
 
 namespace EuclidApp.Views
@@ -16,10 +18,11 @@ namespace EuclidApp.Views
         private double _lastT;
         private int _sentW, _sentH;
 
-        private bool _dragging;             
-        private bool _orbitViaCtrlLeft;     
-        private Point _lastPt;
-        private double _virtX, _virtY;
+        private bool _dragging;
+        private bool _orbitViaCtrlLeft;
+        private Point _lastPt;     // logical coords (Avalonia units) for deltas
+        private double _virtX;     // virtual cursor in *physical* pixels
+        private double _virtY;     // virtual cursor in *physical* pixels
         private const double DragSensitivity = 1.0;
 
         public EuclidView()
@@ -35,12 +38,32 @@ namespace EuclidApp.Views
             EuclidNative.Euclid_OnMods(_euclid, EuclidNative.ToEuclidMods(km));
         }
 
-        // ---------- OpenGL ----------
+        // ===== DPI helpers =====
+
+        private double GetScale()
+            => (this.GetVisualRoot() as IRenderRoot)?.RenderScaling ?? 1.0;
+
+        private (int wPx, int hPx) GetPixelSize()
+        {
+            var s = GetScale();
+            var w = Math.Max(1, (int)Math.Round(Bounds.Width * s));
+            var h = Math.Max(1, (int)Math.Round(Bounds.Height * s));
+            return (w, h);
+        }
+
+        // ===== OpenGL lifecycle =====
+
         protected override void OnOpenGlInit(GlInterface gl)
         {
-            var w = Math.Max(1, (int)Bounds.Width);
-            var h = Math.Max(1, (int)Bounds.Height);
-            var cfg = new EuclidConfig { width = w, height = h, gl_major = 3, gl_minor = 3 };
+            var (w, h) = GetPixelSize();
+
+            var cfg = new EuclidConfig
+            {
+                width = w,
+                height = h,
+                gl_major = 3,
+                gl_minor = 3
+            };
 
             if (EuclidNative.Euclid_Create(ref cfg, gl.GetProcAddress, out _euclid) != 0 || _euclid == IntPtr.Zero)
                 return;
@@ -82,28 +105,35 @@ namespace EuclidApp.Views
         private void SendResizeIfNeeded()
         {
             if (_euclid == IntPtr.Zero) return;
-            var w = Math.Max(1, (int)Bounds.Width);
-            var h = Math.Max(1, (int)Bounds.Height);
+            var (w, h) = GetPixelSize();
             if (w != _sentW || h != _sentH)
             {
                 EuclidNative.Euclid_Resize(_euclid, w, h);
-                _sentW = w; _sentH = h;
+                _sentW = w;
+                _sentH = h;
             }
         }
+
+        // ===== Host input from parent control =====
 
         public void HostPointerPressed(PointerPressedEventArgs e)
         {
             if (_euclid == IntPtr.Zero) return;
 
             Focus();
-            UpdateMods(e.KeyModifiers); 
+            UpdateMods(e.KeyModifiers);
 
-            var pt = e.GetPosition(this);
-            _lastPt = pt;
+            var s = GetScale();
+            var ptL = e.GetPosition(this);              // logical
+            var ptPx = new Point(ptL.X * s, ptL.Y * s); // physical (pixels)
+
+            _lastPt = ptL;
+            _virtX = ptPx.X;
+            _virtY = ptPx.Y;
 
             var kind = e.GetCurrentPoint(this).Properties.PointerUpdateKind;
 
-            // 1) «Чистый Blender»: MMB — жмём, шлём в DLL
+            // native button down
             if (TryGetButton(kind, out var btn, out var isDown) && isDown)
             {
                 EuclidNative.Euclid_OnMouseButton(_euclid, btn, 1, EuclidNative.ToEuclidMods(e.KeyModifiers));
@@ -111,16 +141,15 @@ namespace EuclidApp.Views
                 {
                     _dragging = true;
                     _orbitViaCtrlLeft = false;
-                    _virtX = pt.X; _virtY = pt.Y;
                     EuclidNative.Euclid_OnMouseMove(_euclid, _virtX, _virtY);
                 }
             }
 
+            // Ctrl + LMB emulates orbit (like MMB)
             if ((e.KeyModifiers & KeyModifiers.Control) != 0 && kind == PointerUpdateKind.LeftButtonPressed)
             {
                 _dragging = true;
-                _orbitViaCtrlLeft = true; 
-                _virtX = pt.X; _virtY = pt.Y;
+                _orbitViaCtrlLeft = true;
                 EuclidNative.Euclid_OnMouseMove(_euclid, _virtX, _virtY);
             }
 
@@ -161,33 +190,43 @@ namespace EuclidApp.Views
 
             UpdateMods(e.KeyModifiers);
 
-            var pt = e.GetPosition(this);
+            var s = GetScale();
+            var ptL = e.GetPosition(this); // logical
+
             if (_dragging)
             {
-                var dx = (pt.X - _lastPt.X) * DragSensitivity;
-                var dy = (pt.Y - _lastPt.Y) * DragSensitivity;
+                var dxL = (ptL.X - _lastPt.X) * DragSensitivity;
+                var dyL = (ptL.Y - _lastPt.Y) * DragSensitivity;
 
-                _virtX = Math.Clamp(_virtX + dx, 0, Math.Max(1, (int)Bounds.Width));
-                _virtY = Math.Clamp(_virtY + dy, 0, Math.Max(1, (int)Bounds.Height));
+                // convert deltas to physical pixels
+                var dx = dxL * s;
+                var dy = dyL * s;
+
+                var (wPx, hPx) = GetPixelSize();
+                _virtX = Math.Clamp(_virtX + dx, 0, Math.Max(1, wPx));
+                _virtY = Math.Clamp(_virtY + dy, 0, Math.Max(1, hPx));
 
                 EuclidNative.Euclid_OnMouseMove(_euclid, _virtX, _virtY);
             }
             else
             {
-                EuclidNative.Euclid_OnMouseMove(_euclid, pt.X, pt.Y);
+                EuclidNative.Euclid_OnMouseMove(_euclid, ptL.X * s, ptL.Y * s);
             }
 
-            _lastPt = pt;
+            _lastPt = ptL;
             e.Handled = true;
         }
 
         public void HostPointerWheel(PointerWheelEventArgs e)
         {
             if (_euclid == IntPtr.Zero) return;
+
             UpdateMods(e.KeyModifiers);
             EuclidNative.Euclid_OnScroll(_euclid, e.Delta.X, e.Delta.Y);
             e.Handled = true;
         }
+
+        // ===== Helpers =====
 
         private static bool TryGetButton(PointerUpdateKind kind, out EuclidMouseButton btn, out bool isDown)
         {

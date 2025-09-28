@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace EuclidApp.ViewModels
 {
-    public sealed partial class TrellisPromptViewModel : ObservableObject
+    public sealed partial class TrellisPromptViewModel : ViewModelBase
     {
         [ObservableProperty] private bool isOpen;
         [ObservableProperty] private double panelOpacity = 1.0;

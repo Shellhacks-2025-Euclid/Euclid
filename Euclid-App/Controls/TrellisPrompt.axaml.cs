@@ -18,7 +18,6 @@ namespace EuclidApp.Controls
     {
         public TrellisPromptViewModel VM => (TrellisPromptViewModel)DataContext!;
 
-        // —обытие Ч контрол закрылс€ сам (фон/ESC)
         public event Action? Closed;
 
         private const int AnimMs = 160;

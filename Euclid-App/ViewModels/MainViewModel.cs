@@ -1,5 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Controls;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EuclidApp.Views;
 using System.Collections.ObjectModel;
 
 namespace EuclidApp.ViewModels
@@ -45,6 +47,22 @@ namespace EuclidApp.ViewModels
             IsPromptOpen = true;
         }
 
+        [RelayCommand]
+        private async Task OpenRenderDialogAsync(Window? owner)
+        {
+            var win = new RenderImageWindow
+            {
+                Width = 1280,
+                Height = 800,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (owner is not null)
+                await win.ShowDialog(owner);
+            else
+                win.Show(); 
+        }
+
         public void HandleTrellisSubmit(string prompt, AttachmentItem[]? images)
         {
             Console.WriteLine($"Trellis prompt: {prompt} | images: {images?.Length ?? 0}");
@@ -58,12 +76,28 @@ namespace EuclidApp.ViewModels
         public ObservableCollection<SceneNode> Children { get; } = new();
         public Transform Transform { get; } = new();
 
-        public SceneNode(string name) => Name = name;
+        public SceneNode(string name)
+        {
+            Name = name;
+            Children.CollectionChanged += (_, __) =>
+            {
+                OnPropertyChanged(nameof(HasChildren));
+                OnPropertyChanged(nameof(IsFolder));
+                OnPropertyChanged(nameof(IsLeaf));
+            };
+        }
+
         public SceneNode(string name, System.Collections.Generic.IEnumerable<SceneNode> children) : this(name)
         {
             foreach (var c in children) Children.Add(c);
         }
+
+        public bool HasChildren => Children.Count > 0;
+
+        public bool IsFolder => HasChildren;
+        public bool IsLeaf => !HasChildren;
     }
+
 
     public sealed partial class Transform : ObservableObject
     {
