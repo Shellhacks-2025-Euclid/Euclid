@@ -1,4 +1,5 @@
 User-agent: *
 Disallow: 
 Disallow: /cgi-bin/
-Sitemap: https://nassyrov.net
+Sitemap: https://euclid.nassyrov.net
+
